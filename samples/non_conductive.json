@@ -1,0 +1,174 @@
+{
+    'category': 'all', 
+    'items': 
+    {
+        'cluster_cluster': 
+        {
+          'items': [], 'pagination': {'page': 1, 'page_size': 50, 'total': 0
+        }
+        }, 'point_cluster': {'items': [
+        {'cluster': {'cluster_id': 'cluster_1', 'point_count': 2, 'points': [
+              0,
+              9
+            ]
+          }, 'point_id': 1, 'status': 'confirmed_non_conductive'
+        },
+        {'cluster': {'cluster_id': 'cluster_1', 'point_count': 2, 'points': [
+              0,
+              9
+            ]
+          }, 'point_id': 2, 'status': 'confirmed_non_conductive'
+        },
+        {'cluster': {'cluster_id': 'cluster_1', 'point_count': 2, 'points': [
+              0,
+              9
+            ]
+          }, 'point_id': 3, 'status': 'confirmed_non_conductive'
+        },
+        {'cluster': {'cluster_id': 'cluster_1', 'point_count': 2, 'points': [
+              0,
+              9
+            ]
+          }, 'point_id': 4, 'status': 'confirmed_non_conductive'
+        },
+        {'cluster': {'cluster_id': 'cluster_1', 'point_count': 2, 'points': [
+              0,
+              9
+            ]
+          }, 'point_id': 5, 'status': 'confirmed_non_conductive'
+        },
+        {'cluster': {'cluster_id': 'cluster_1', 'point_count': 2, 'points': [
+              0,
+              9
+            ]
+          }, 'point_id': 6, 'status': 'confirmed_non_conductive'
+        },
+        {'cluster': {'cluster_id': 'cluster_1', 'point_count': 2, 'points': [
+              0,
+              9
+            ]
+          }, 'point_id': 7, 'status': 'confirmed_non_conductive'
+        },
+        {'cluster': {'cluster_id': 'cluster_1', 'point_count': 2, 'points': [
+              0,
+              9
+            ]
+          }, 'point_id': 8, 'status': 'confirmed_non_conductive'
+        }
+      ], 'pagination': {'page': 1, 'page_size': 50, 'total': 8
+      }
+    }, 
+    'point_point': 
+      {'items': 
+      [
+          {'point1': 0, 'point2': 1, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 0, 'point2': 2, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 0, 'point2': 3, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 0, 'point2': 4, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 0, 'point2': 5, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 0, 'point2': 6, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 0, 'point2': 7, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 0, 'point2': 8, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 1, 'point2': 2, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 1, 'point2': 3, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 1, 'point2': 4, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 1, 'point2': 5, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 1, 'point2': 6, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 1, 'point2': 7, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 1, 'point2': 8, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 1, 'point2': 9, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 1, 'point2': 10, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 1, 'point2': 11, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 1, 'point2': 12, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 1, 'point2': 13, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 1, 'point2': 14, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 1, 'point2': 15, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 1, 'point2': 16, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 1, 'point2': 17, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 1, 'point2': 18, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 1, 'point2': 19, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 2, 'point2': 3, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 2, 'point2': 4, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 2, 'point2': 5, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 2, 'point2': 6, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 2, 'point2': 7, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 2, 'point2': 8, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 2, 'point2': 9, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 2, 'point2': 20, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 2, 'point2': 21, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 2, 'point2': 22, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 2, 'point2': 23, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 2, 'point2': 24, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 2, 'point2': 25, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 2, 'point2': 26, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 2, 'point2': 27, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 2, 'point2': 28, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 2, 'point2': 29, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 3, 'point2': 4, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 3, 'point2': 5, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 3, 'point2': 6, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 3, 'point2': 7, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 3, 'point2': 8, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 3, 'point2': 9, 'status': 'confirmed_non_conductive'
+          },
+          {'point1': 3, 'point2': 30, 'status': 'confirmed_non_conductive'
+          }
+        ], 
+        'pagination': 
+        {
+          'page': 1, 
+          'page_size': 50, 
+          'total': 264
+        }
+      }
+  }, 'pagination': None, 'summary': {'cluster_pairs': 0, 'point_cluster_pairs': 8, 'point_point_pairs': 264
+  }
+}

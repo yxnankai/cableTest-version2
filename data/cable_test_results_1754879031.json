@@ -1,0 +1,4271 @@
+{
+  "system_info": {
+    "total_points": 1000,
+    "relay_switch_time": 0.003,
+    "total_connections": 498,
+    "total_tests": 4,
+    "total_relay_operations": 248,
+    "system_uptime": 1754879031.034784
+  },
+  "connections": [
+    {
+      "source_point": 422,
+      "target_points": [
+        430
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 787,
+      "target_points": [
+        127
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 568,
+      "target_points": [
+        455
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 0,
+      "target_points": [
+        772
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 726,
+      "target_points": [
+        812
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 931,
+      "target_points": [
+        409
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 248,
+      "target_points": [
+        997
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 527,
+      "target_points": [
+        649
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 315,
+      "target_points": [
+        106
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 886,
+      "target_points": [
+        345
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 420,
+      "target_points": [
+        836
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 847,
+      "target_points": [
+        525
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 344,
+      "target_points": [
+        385
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 917,
+      "target_points": [
+        240
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 36,
+      "target_points": [
+        625
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 610,
+      "target_points": [
+        687
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 683,
+      "target_points": [
+        535
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 50,
+      "target_points": [
+        244
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 297,
+      "target_points": [
+        725
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 821,
+      "target_points": [
+        526
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 551,
+      "target_points": [
+        329
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 465,
+      "target_points": [
+        389
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 860,
+      "target_points": [
+        833
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 896,
+      "target_points": [
+        76
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 400,
+      "target_points": [
+        125
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 853,
+      "target_points": [
+        647
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 441,
+      "target_points": [
+        303
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 343,
+      "target_points": [
+        259
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 303,
+      "target_points": [
+        561
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 420,
+      "target_points": [
+        972
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 658,
+      "target_points": [
+        159
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 1,
+      "target_points": [
+        417
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 536,
+      "target_points": [
+        625
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 49,
+      "target_points": [
+        164
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 16,
+      "target_points": [
+        429
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 184,
+      "target_points": [
+        186
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 340,
+      "target_points": [
+        572
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 732,
+      "target_points": [
+        501
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 663,
+      "target_points": [
+        637
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 376,
+      "target_points": [
+        432
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 642,
+      "target_points": [
+        256
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 718,
+      "target_points": [
+        889
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 161,
+      "target_points": [
+        433
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 119,
+      "target_points": [
+        316
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 9,
+      "target_points": [
+        273
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 77,
+      "target_points": [
+        577
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 995,
+      "target_points": [
+        795
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 586,
+      "target_points": [
+        834
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 780,
+      "target_points": [
+        113
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 479,
+      "target_points": [
+        526
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 937,
+      "target_points": [
+        339
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 394,
+      "target_points": [
+        474
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 791,
+      "target_points": [
+        913
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 56,
+      "target_points": [
+        519
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 795,
+      "target_points": [
+        43
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 426,
+      "target_points": [
+        947
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 167,
+      "target_points": [
+        901
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 155,
+      "target_points": [
+        67
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 790,
+      "target_points": [
+        883
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 282,
+      "target_points": [
+        321
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 653,
+      "target_points": [
+        269
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 786,
+      "target_points": [
+        664
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 19,
+      "target_points": [
+        678
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 938,
+      "target_points": [
+        771
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 525,
+      "target_points": [
+        170
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 592,
+      "target_points": [
+        452
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 834,
+      "target_points": [
+        600
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 630,
+      "target_points": [
+        667
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 686,
+      "target_points": [
+        656
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 214,
+      "target_points": [
+        423
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 216,
+      "target_points": [
+        228
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 206,
+      "target_points": [
+        639
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 439,
+      "target_points": [
+        348
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 92,
+      "target_points": [
+        774
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 735,
+      "target_points": [
+        325
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 799,
+      "target_points": [
+        616
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 754,
+      "target_points": [
+        384
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 537,
+      "target_points": [
+        790
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 109,
+      "target_points": [
+        876
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 48,
+      "target_points": [
+        676
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 540,
+      "target_points": [
+        309
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 166,
+      "target_points": [
+        878
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 277,
+      "target_points": [
+        205
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 612,
+      "target_points": [
+        630
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 786,
+      "target_points": [
+        226
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 370,
+      "target_points": [
+        262
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 925,
+      "target_points": [
+        362
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 858,
+      "target_points": [
+        537
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 308,
+      "target_points": [
+        907
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 0,
+      "target_points": [
+        837
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 545,
+      "target_points": [
+        586
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 74,
+      "target_points": [
+        464
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 27,
+      "target_points": [
+        334
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 716,
+      "target_points": [
+        641
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 458,
+      "target_points": [
+        685
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 125,
+      "target_points": [
+        178
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 487,
+      "target_points": [
+        868
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 16,
+      "target_points": [
+        665
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 327,
+      "target_points": [
+        296
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 582,
+      "target_points": [
+        757
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 786,
+      "target_points": [
+        825
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 338,
+      "target_points": [
+        790
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 811,
+      "target_points": [
+        988
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 239,
+      "target_points": [
+        561
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 985,
+      "target_points": [
+        797
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 575,
+      "target_points": [
+        968
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 10,
+      "target_points": [
+        359
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 623,
+      "target_points": [
+        698
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 457,
+      "target_points": [
+        502
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 111,
+      "target_points": [
+        308
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 306,
+      "target_points": [
+        705
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 908,
+      "target_points": [
+        242
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 325,
+      "target_points": [
+        785
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 218,
+      "target_points": [
+        526
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 589,
+      "target_points": [
+        575
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 17,
+      "target_points": [
+        77
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 672,
+      "target_points": [
+        873
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 682,
+      "target_points": [
+        993
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 660,
+      "target_points": [
+        210
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 906,
+      "target_points": [
+        580
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 928,
+      "target_points": [
+        168
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 817,
+      "target_points": [
+        630
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 535,
+      "target_points": [
+        689
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 652,
+      "target_points": [
+        434
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 362,
+      "target_points": [
+        630
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 45,
+      "target_points": [
+        874
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 243,
+      "target_points": [
+        728
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 725,
+      "target_points": [
+        749
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 441,
+      "target_points": [
+        415
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 526,
+      "target_points": [
+        989
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 356,
+      "target_points": [
+        381
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 194,
+      "target_points": [
+        589
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 670,
+      "target_points": [
+        917
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 745,
+      "target_points": [
+        13
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 451,
+      "target_points": [
+        784
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 94,
+      "target_points": [
+        494
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 114,
+      "target_points": [
+        675
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 964,
+      "target_points": [
+        771
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 667,
+      "target_points": [
+        301
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 579,
+      "target_points": [
+        188
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 880,
+      "target_points": [
+        875
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 708,
+      "target_points": [
+        261
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 473,
+      "target_points": [
+        849
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 242,
+      "target_points": [
+        741
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 632,
+      "target_points": [
+        739
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 438,
+      "target_points": [
+        777
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 739,
+      "target_points": [
+        890
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 226,
+      "target_points": [
+        626
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 282,
+      "target_points": [
+        465
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 756,
+      "target_points": [
+        59
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 563,
+      "target_points": [
+        583
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 918,
+      "target_points": [
+        833
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 862,
+      "target_points": [
+        885
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 779,
+      "target_points": [
+        610
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 278,
+      "target_points": [
+        246
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 34,
+      "target_points": [
+        53
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 837,
+      "target_points": [
+        153
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 215,
+      "target_points": [
+        365
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 171,
+      "target_points": [
+        398
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 174,
+      "target_points": [
+        563
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 990,
+      "target_points": [
+        238
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 256,
+      "target_points": [
+        375
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 822,
+      "target_points": [
+        240
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 759,
+      "target_points": [
+        705
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 450,
+      "target_points": [
+        602
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 304,
+      "target_points": [
+        119
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 292,
+      "target_points": [
+        371
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 475,
+      "target_points": [
+        61
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 622,
+      "target_points": [
+        73
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 632,
+      "target_points": [
+        812
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 743,
+      "target_points": [
+        406
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 690,
+      "target_points": [
+        667
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 369,
+      "target_points": [
+        393
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 15,
+      "target_points": [
+        266
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 703,
+      "target_points": [
+        258
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 862,
+      "target_points": [
+        226
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 728,
+      "target_points": [
+        134
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 234,
+      "target_points": [
+        386
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 104,
+      "target_points": [
+        178
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 796,
+      "target_points": [
+        220
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 941,
+      "target_points": [
+        337
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 916,
+      "target_points": [
+        111
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 759,
+      "target_points": [
+        705
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 521,
+      "target_points": [
+        365
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 916,
+      "target_points": [
+        432
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 512,
+      "target_points": [
+        188
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 418,
+      "target_points": [
+        627
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 614,
+      "target_points": [
+        276
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 476,
+      "target_points": [
+        339
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 805,
+      "target_points": [
+        840
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 731,
+      "target_points": [
+        930
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 299,
+      "target_points": [
+        360
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 972,
+      "target_points": [
+        898
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 319,
+      "target_points": [
+        692
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 310,
+      "target_points": [
+        905
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 318,
+      "target_points": [
+        310
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 298,
+      "target_points": [
+        191
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 939,
+      "target_points": [
+        196
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 880,
+      "target_points": [
+        222
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 781,
+      "target_points": [
+        928
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 465,
+      "target_points": [
+        454
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 739,
+      "target_points": [
+        76
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 911,
+      "target_points": [
+        34
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 283,
+      "target_points": [
+        328
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 289,
+      "target_points": [
+        579
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 163,
+      "target_points": [
+        811
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 979,
+      "target_points": [
+        413
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 514,
+      "target_points": [
+        30
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 732,
+      "target_points": [
+        524
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 210,
+      "target_points": [
+        340
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 773,
+      "target_points": [
+        631
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 63,
+      "target_points": [
+        789
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 929,
+      "target_points": [
+        443
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 36,
+      "target_points": [
+        533
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 978,
+      "target_points": [
+        784
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 416,
+      "target_points": [
+        217
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 237,
+      "target_points": [
+        401
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 323,
+      "target_points": [
+        361
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 684,
+      "target_points": [
+        955
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 326,
+      "target_points": [
+        190
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 54,
+      "target_points": [
+        642
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 869,
+      "target_points": [
+        189
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 92,
+      "target_points": [
+        719
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 657,
+      "target_points": [
+        712
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 164,
+      "target_points": [
+        623
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 876,
+      "target_points": [
+        909
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 373,
+      "target_points": [
+        340
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 50,
+      "target_points": [
+        422
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 480,
+      "target_points": [
+        389
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 170,
+      "target_points": [
+        475
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 979,
+      "target_points": [
+        973
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 487,
+      "target_points": [
+        730
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 21,
+      "target_points": [
+        101
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 944,
+      "target_points": [
+        197
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 600,
+      "target_points": [
+        220
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 640,
+      "target_points": [
+        940
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 915,
+      "target_points": [
+        925
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 832,
+      "target_points": [
+        620
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 127,
+      "target_points": [
+        314
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 60,
+      "target_points": [
+        100
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 977,
+      "target_points": [
+        296
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 261,
+      "target_points": [
+        826
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 446,
+      "target_points": [
+        402
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 136,
+      "target_points": [
+        963
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 273,
+      "target_points": [
+        267
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 782,
+      "target_points": [
+        837
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 320,
+      "target_points": [
+        613
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 249,
+      "target_points": [
+        524
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 652,
+      "target_points": [
+        474
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 369,
+      "target_points": [
+        563
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 480,
+      "target_points": [
+        458
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 383,
+      "target_points": [
+        236
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 309,
+      "target_points": [
+        92
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 341,
+      "target_points": [
+        464
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 704,
+      "target_points": [
+        94
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 916,
+      "target_points": [
+        332
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 842,
+      "target_points": [
+        767
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 164,
+      "target_points": [
+        16
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 807,
+      "target_points": [
+        373
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 778,
+      "target_points": [
+        497
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 140,
+      "target_points": [
+        400
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 728,
+      "target_points": [
+        179
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 263,
+      "target_points": [
+        741
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 951,
+      "target_points": [
+        52
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 145,
+      "target_points": [
+        200
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 252,
+      "target_points": [
+        69
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 383,
+      "target_points": [
+        872
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 164,
+      "target_points": [
+        111
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 794,
+      "target_points": [
+        812
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 560,
+      "target_points": [
+        40
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 992,
+      "target_points": [
+        621
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 949,
+      "target_points": [
+        267
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 340,
+      "target_points": [
+        953
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 229,
+      "target_points": [
+        904
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 451,
+      "target_points": [
+        378
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 535,
+      "target_points": [
+        331
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 870,
+      "target_points": [
+        631
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 307,
+      "target_points": [
+        22
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 715,
+      "target_points": [
+        789
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 673,
+      "target_points": [
+        56
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 496,
+      "target_points": [
+        555
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 170,
+      "target_points": [
+        888
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 166,
+      "target_points": [
+        744
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 687,
+      "target_points": [
+        792
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 750,
+      "target_points": [
+        607
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 693,
+      "target_points": [
+        863
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 984,
+      "target_points": [
+        534
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 567,
+      "target_points": [
+        743
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 166,
+      "target_points": [
+        421
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 599,
+      "target_points": [
+        49
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 242,
+      "target_points": [
+        335
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 25,
+      "target_points": [
+        392
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 318,
+      "target_points": [
+        578
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 333,
+      "target_points": [
+        397
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 838,
+      "target_points": [
+        113
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 542,
+      "target_points": [
+        892
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 153,
+      "target_points": [
+        640
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 991,
+      "target_points": [
+        887
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 791,
+      "target_points": [
+        648
+      ],
+      "connection_type": "one_to_one"
+    },
+    {
+      "source_point": 983,
+      "target_points": [
+        611,
+        720,
+        699,
+        398,
+        856
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 527,
+      "target_points": [
+        542,
+        415,
+        851,
+        906
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 423,
+      "target_points": [
+        378,
+        188,
+        496
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 564,
+      "target_points": [
+        300,
+        348,
+        774
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 498,
+      "target_points": [
+        764,
+        821,
+        71,
+        673,
+        754
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 277,
+      "target_points": [
+        637,
+        977
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 403,
+      "target_points": [
+        466,
+        761,
+        723,
+        806,
+        643
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 936,
+      "target_points": [
+        893,
+        500,
+        797
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 579,
+      "target_points": [
+        721,
+        518,
+        511,
+        12
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 547,
+      "target_points": [
+        182,
+        20,
+        753
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 656,
+      "target_points": [
+        259,
+        56,
+        129,
+        466,
+        561
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 272,
+      "target_points": [
+        421,
+        224,
+        449
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 586,
+      "target_points": [
+        906,
+        37,
+        974
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 610,
+      "target_points": [
+        316,
+        66,
+        375,
+        18
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 647,
+      "target_points": [
+        839,
+        549,
+        501,
+        523,
+        83
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 946,
+      "target_points": [
+        331,
+        117,
+        644,
+        782,
+        580
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 949,
+      "target_points": [
+        592,
+        80,
+        924
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 681,
+      "target_points": [
+        875,
+        266,
+        994
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 918,
+      "target_points": [
+        897,
+        68,
+        255
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 959,
+      "target_points": [
+        522,
+        937,
+        55
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 283,
+      "target_points": [
+        677,
+        914,
+        522,
+        224,
+        902
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 491,
+      "target_points": [
+        276,
+        997,
+        299
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 350,
+      "target_points": [
+        958,
+        779,
+        299,
+        593
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 889,
+      "target_points": [
+        873,
+        583
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 880,
+      "target_points": [
+        635,
+        827
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 382,
+      "target_points": [
+        378,
+        629
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 794,
+      "target_points": [
+        244,
+        600
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 367,
+      "target_points": [
+        604,
+        930,
+        531
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 289,
+      "target_points": [
+        91,
+        684
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 134,
+      "target_points": [
+        584,
+        875,
+        114,
+        274
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 783,
+      "target_points": [
+        636,
+        222,
+        210
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 273,
+      "target_points": [
+        744,
+        743,
+        151,
+        540
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 420,
+      "target_points": [
+        343,
+        211
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 151,
+      "target_points": [
+        358,
+        32
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 222,
+      "target_points": [
+        103,
+        639
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 410,
+      "target_points": [
+        855,
+        641,
+        635,
+        911
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 922,
+      "target_points": [
+        658,
+        608,
+        411,
+        350
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 103,
+      "target_points": [
+        126,
+        120,
+        627
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 68,
+      "target_points": [
+        482,
+        9,
+        750,
+        915
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 674,
+      "target_points": [
+        568,
+        479,
+        453,
+        299,
+        525
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 483,
+      "target_points": [
+        279,
+        71
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 724,
+      "target_points": [
+        171,
+        6,
+        297,
+        853
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 459,
+      "target_points": [
+        290,
+        886
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 190,
+      "target_points": [
+        474,
+        387,
+        838,
+        718
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 617,
+      "target_points": [
+        688,
+        256
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 413,
+      "target_points": [
+        648,
+        605,
+        811
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 206,
+      "target_points": [
+        609,
+        77,
+        810
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 939,
+      "target_points": [
+        290,
+        144
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 840,
+      "target_points": [
+        113,
+        295,
+        208
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 799,
+      "target_points": [
+        587,
+        278,
+        166,
+        492,
+        12
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 54,
+      "target_points": [
+        533,
+        501,
+        754,
+        292,
+        573
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 971,
+      "target_points": [
+        643,
+        796
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 750,
+      "target_points": [
+        643,
+        257,
+        52,
+        695
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 127,
+      "target_points": [
+        932,
+        206,
+        755
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 362,
+      "target_points": [
+        429,
+        156,
+        334,
+        630
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 900,
+      "target_points": [
+        346,
+        166,
+        883,
+        380
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 256,
+      "target_points": [
+        302,
+        996,
+        654
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 521,
+      "target_points": [
+        883,
+        728
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 117,
+      "target_points": [
+        603,
+        453
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 712,
+      "target_points": [
+        320,
+        266,
+        882
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 706,
+      "target_points": [
+        839,
+        267
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 687,
+      "target_points": [
+        632,
+        257,
+        125
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 496,
+      "target_points": [
+        918,
+        803,
+        999,
+        417
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 545,
+      "target_points": [
+        537,
+        491
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 170,
+      "target_points": [
+        916,
+        499,
+        62,
+        684
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 773,
+      "target_points": [
+        98,
+        925
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 47,
+      "target_points": [
+        29,
+        445,
+        469,
+        473,
+        345
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 514,
+      "target_points": [
+        284,
+        637,
+        882,
+        328
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 534,
+      "target_points": [
+        614,
+        499,
+        432
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 310,
+      "target_points": [
+        313,
+        21,
+        564,
+        482,
+        673
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 831,
+      "target_points": [
+        286,
+        589,
+        882,
+        418
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 673,
+      "target_points": [
+        527,
+        765,
+        26,
+        534
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 880,
+      "target_points": [
+        686,
+        470,
+        249,
+        387,
+        427
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 961,
+      "target_points": [
+        76,
+        847
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 478,
+      "target_points": [
+        987,
+        639,
+        188,
+        413,
+        151
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 914,
+      "target_points": [
+        736,
+        371,
+        418,
+        600,
+        256
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 951,
+      "target_points": [
+        428,
+        198,
+        974,
+        430
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 831,
+      "target_points": [
+        702,
+        952,
+        648,
+        224,
+        213
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 747,
+      "target_points": [
+        554,
+        521,
+        596
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 196,
+      "target_points": [
+        481,
+        194,
+        660
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 681,
+      "target_points": [
+        782,
+        349,
+        953
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 256,
+      "target_points": [
+        337,
+        743
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 543,
+      "target_points": [
+        458,
+        786,
+        551,
+        342
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 822,
+      "target_points": [
+        950,
+        809,
+        917
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 22,
+      "target_points": [
+        598,
+        445,
+        491,
+        814
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 701,
+      "target_points": [
+        274,
+        563
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 384,
+      "target_points": [
+        742,
+        497,
+        121,
+        232,
+        487
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 427,
+      "target_points": [
+        440,
+        507,
+        709,
+        751,
+        245
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 784,
+      "target_points": [
+        667,
+        709,
+        600
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 801,
+      "target_points": [
+        367,
+        520,
+        841,
+        664
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 64,
+      "target_points": [
+        744,
+        396,
+        813,
+        63
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 540,
+      "target_points": [
+        698,
+        521,
+        990,
+        635,
+        847
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 191,
+      "target_points": [
+        575,
+        319,
+        50,
+        726,
+        593
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 522,
+      "target_points": [
+        700,
+        993
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 902,
+      "target_points": [
+        684,
+        906,
+        474,
+        661,
+        708
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 180,
+      "target_points": [
+        824,
+        639,
+        845,
+        434
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 239,
+      "target_points": [
+        215,
+        863
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 667,
+      "target_points": [
+        705,
+        286
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 566,
+      "target_points": [
+        883,
+        989,
+        924,
+        852
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 779,
+      "target_points": [
+        627,
+        266
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 456,
+      "target_points": [
+        949,
+        275,
+        299
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 79,
+      "target_points": [
+        890,
+        595
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 377,
+      "target_points": [
+        817,
+        710,
+        15,
+        866,
+        219
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 763,
+      "target_points": [
+        94,
+        756,
+        906,
+        766,
+        699
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 858,
+      "target_points": [
+        974,
+        406,
+        835,
+        668,
+        473
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 561,
+      "target_points": [
+        676,
+        868,
+        982
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 626,
+      "target_points": [
+        79,
+        21,
+        540,
+        406
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 461,
+      "target_points": [
+        567,
+        712,
+        380,
+        739
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 586,
+      "target_points": [
+        801,
+        561,
+        383,
+        395,
+        655
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 680,
+      "target_points": [
+        200,
+        201,
+        207,
+        726
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 346,
+      "target_points": [
+        815,
+        887,
+        963,
+        117
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 136,
+      "target_points": [
+        918,
+        735,
+        587
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 360,
+      "target_points": [
+        514,
+        281
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 129,
+      "target_points": [
+        737,
+        393
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 364,
+      "target_points": [
+        980,
+        910,
+        280
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 781,
+      "target_points": [
+        499,
+        713,
+        224
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 229,
+      "target_points": [
+        862,
+        660,
+        167,
+        871,
+        593
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 520,
+      "target_points": [
+        738,
+        755,
+        215
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 160,
+      "target_points": [
+        8,
+        968,
+        220,
+        654
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 829,
+      "target_points": [
+        997,
+        954,
+        783,
+        319
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 397,
+      "target_points": [
+        424,
+        145,
+        421
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 402,
+      "target_points": [
+        30,
+        120
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 707,
+      "target_points": [
+        966,
+        312,
+        870
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 208,
+      "target_points": [
+        815,
+        617,
+        523
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 561,
+      "target_points": [
+        256,
+        766,
+        848,
+        760,
+        768
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 955,
+      "target_points": [
+        83,
+        52,
+        151
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 941,
+      "target_points": [
+        446,
+        160
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 656,
+      "target_points": [
+        798,
+        775,
+        806
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 684,
+      "target_points": [
+        168,
+        283,
+        126,
+        74,
+        432
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 483,
+      "target_points": [
+        604,
+        244
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 640,
+      "target_points": [
+        913,
+        475,
+        435,
+        785
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 863,
+      "target_points": [
+        818,
+        851
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 171,
+      "target_points": [
+        980,
+        988
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 875,
+      "target_points": [
+        121,
+        625,
+        900,
+        202,
+        98
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 399,
+      "target_points": [
+        996,
+        694,
+        229
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 385,
+      "target_points": [
+        69,
+        2,
+        960
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 907,
+      "target_points": [
+        465,
+        381,
+        135,
+        820
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 607,
+      "target_points": [
+        683,
+        323
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 566,
+      "target_points": [
+        492,
+        243,
+        60,
+        845
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 430,
+      "target_points": [
+        820,
+        506
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 867,
+      "target_points": [
+        256,
+        862
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 114,
+      "target_points": [
+        195,
+        617,
+        515,
+        112,
+        569
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 385,
+      "target_points": [
+        899,
+        569,
+        404,
+        31
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 165,
+      "target_points": [
+        760,
+        348,
+        795,
+        202
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 418,
+      "target_points": [
+        761,
+        77,
+        934
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 826,
+      "target_points": [
+        788,
+        144,
+        977,
+        74
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 538,
+      "target_points": [
+        41,
+        408,
+        237
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 943,
+      "target_points": [
+        900,
+        122,
+        783,
+        887
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 582,
+      "target_points": [
+        962,
+        789,
+        667,
+        153,
+        315
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 159,
+      "target_points": [
+        651,
+        358,
+        409,
+        910
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 888,
+      "target_points": [
+        407,
+        124
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 367,
+      "target_points": [
+        382,
+        832,
+        987
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 120,
+      "target_points": [
+        945,
+        527,
+        482
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 528,
+      "target_points": [
+        349,
+        840,
+        390
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 779,
+      "target_points": [
+        713,
+        539
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 275,
+      "target_points": [
+        882,
+        656
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 316,
+      "target_points": [
+        133,
+        327,
+        89,
+        649
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 347,
+      "target_points": [
+        701,
+        796,
+        236
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 188,
+      "target_points": [
+        214,
+        335,
+        541,
+        793
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 399,
+      "target_points": [
+        668,
+        420
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 795,
+      "target_points": [
+        216,
+        47,
+        134,
+        312,
+        491
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 8,
+      "target_points": [
+        769,
+        328,
+        939,
+        498
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 388,
+      "target_points": [
+        408,
+        724
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 87,
+      "target_points": [
+        803,
+        625,
+        436
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 27,
+      "target_points": [
+        406,
+        771
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 500,
+      "target_points": [
+        988,
+        344,
+        250,
+        261
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 76,
+      "target_points": [
+        84,
+        429
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 113,
+      "target_points": [
+        942,
+        639,
+        462,
+        694,
+        602
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 671,
+      "target_points": [
+        468,
+        584,
+        821,
+        905
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 811,
+      "target_points": [
+        920,
+        783
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 643,
+      "target_points": [
+        348,
+        5,
+        40,
+        867
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 106,
+      "target_points": [
+        327,
+        716,
+        778,
+        911
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 158,
+      "target_points": [
+        201,
+        796,
+        33,
+        125
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 352,
+      "target_points": [
+        760,
+        636
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 550,
+      "target_points": [
+        702,
+        716,
+        766,
+        786
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 856,
+      "target_points": [
+        511,
+        8,
+        727
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 702,
+      "target_points": [
+        534,
+        299,
+        897,
+        905
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 210,
+      "target_points": [
+        500,
+        108,
+        990
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 164,
+      "target_points": [
+        350,
+        134,
+        734,
+        758
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 737,
+      "target_points": [
+        296,
+        138
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 619,
+      "target_points": [
+        620,
+        56
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 219,
+      "target_points": [
+        41,
+        511,
+        588,
+        816,
+        916
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 754,
+      "target_points": [
+        862,
+        140,
+        249,
+        710
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 698,
+      "target_points": [
+        594,
+        717,
+        649,
+        859,
+        842
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 214,
+      "target_points": [
+        643,
+        223,
+        946,
+        19
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 171,
+      "target_points": [
+        847,
+        423,
+        445,
+        298
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 869,
+      "target_points": [
+        182,
+        138,
+        7
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 825,
+      "target_points": [
+        480,
+        793,
+        917,
+        716,
+        746
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 938,
+      "target_points": [
+        859,
+        357,
+        858,
+        347,
+        745
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 203,
+      "target_points": [
+        104,
+        773,
+        553,
+        826
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 88,
+      "target_points": [
+        543,
+        701,
+        570,
+        160
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 11,
+      "target_points": [
+        332,
+        535,
+        547,
+        696
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 888,
+      "target_points": [
+        752,
+        336
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 835,
+      "target_points": [
+        601,
+        236,
+        573,
+        277
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 539,
+      "target_points": [
+        839,
+        731,
+        758,
+        306,
+        291
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 576,
+      "target_points": [
+        906,
+        310
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 449,
+      "target_points": [
+        887,
+        353,
+        846,
+        917
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 831,
+      "target_points": [
+        780,
+        898,
+        143
+      ],
+      "connection_type": "one_to_many"
+    },
+    {
+      "source_point": 647,
+      "target_points": [
+        604,
+        372,
+        296
+      ],
+      "connection_type": "one_to_many"
+    }
+  ],
+  "test_results": [
+    {
+      "test_id": "test_1754879026_9580",
+      "timestamp": 1754879026.8698156,
+      "power_source": 162,
+      "active_points": [
+        461,
+        985,
+        488,
+        409,
+        554,
+        891,
+        213,
+        285,
+        376,
+        733,
+        652,
+        139,
+        600,
+        691,
+        142,
+        920,
+        745,
+        762,
+        147,
+        908,
+        563,
+        155,
+        137,
+        700,
+        45,
+        220,
+        407,
+        862,
+        886,
+        532,
+        810,
+        475,
+        535,
+        253,
+        962,
+        148,
+        684,
+        24,
+        873,
+        404,
+        97,
+        167,
+        17,
+        5,
+        843,
+        718,
+        517,
+        704,
+        161,
+        881
+      ],
+      "detected_connections": [],
+      "test_duration": 0.7684834003448486,
+      "relay_operations": 50
+    },
+    {
+      "test_id": "test_1754879027_4800",
+      "timestamp": 1754879027.6393018,
+      "power_source": 977,
+      "active_points": [
+        448,
+        761,
+        473,
+        338,
+        528,
+        514,
+        251,
+        788,
+        970,
+        757,
+        847,
+        178,
+        927,
+        369,
+        417,
+        298,
+        769,
+        727,
+        373,
+        330,
+        271,
+        357,
+        73,
+        918,
+        395,
+        185,
+        501,
+        821,
+        56,
+        343,
+        956,
+        459,
+        272,
+        665,
+        466,
+        105,
+        19,
+        284,
+        455,
+        149,
+        285,
+        628,
+        672,
+        59,
+        484,
+        452,
+        55,
+        907,
+        588,
+        561,
+        913,
+        212,
+        31,
+        620,
+        586,
+        871,
+        181,
+        745,
+        655,
+        944,
+        732,
+        754,
+        196,
+        303,
+        188,
+        596,
+        402,
+        894,
+        421,
+        781,
+        624,
+        444,
+        103,
+        516,
+        491,
+        511,
+        544,
+        275,
+        875,
+        852,
+        480,
+        437
+      ],
+      "detected_connections": [],
+      "test_duration": 1.2719519138336182,
+      "relay_operations": 132
+    },
+    {
+      "test_id": "test_1754879029_5781",
+      "timestamp": 1754879029.0201726,
+      "power_source": 590,
+      "active_points": [
+        56,
+        927,
+        614,
+        877,
+        521,
+        742,
+        465,
+        619,
+        838,
+        428,
+        403,
+        803,
+        511,
+        28,
+        985,
+        848,
+        643,
+        726,
+        911,
+        5,
+        22,
+        505,
+        586,
+        420,
+        986,
+        245,
+        818,
+        853,
+        455,
+        857,
+        307,
+        221,
+        274,
+        295,
+        538,
+        839,
+        972,
+        422,
+        987,
+        266,
+        609,
+        488,
+        958,
+        393,
+        13,
+        865,
+        119,
+        230,
+        995,
+        177,
+        981,
+        516,
+        685,
+        323,
+        361,
+        714,
+        270,
+        432,
+        982,
+        593,
+        259,
+        271,
+        631,
+        426,
+        439,
+        595,
+        550,
+        93,
+        920,
+        303,
+        483,
+        947
+      ],
+      "detected_connections": [],
+      "test_duration": 1.1186072826385498,
+      "relay_operations": 204
+    },
+    {
+      "test_id": "test_1754879030_7499",
+      "timestamp": 1754879030.248197,
+      "power_source": 806,
+      "active_points": [
+        207,
+        989,
+        769,
+        845,
+        118,
+        553,
+        424,
+        449,
+        592,
+        368,
+        382,
+        392,
+        535,
+        440,
+        551,
+        643,
+        125,
+        875,
+        402,
+        676,
+        635,
+        172,
+        573,
+        445,
+        169,
+        812,
+        415,
+        920,
+        544,
+        167,
+        791,
+        206,
+        114,
+        470,
+        25,
+        990,
+        720,
+        308,
+        854,
+        374,
+        680,
+        330,
+        473,
+        590
+      ],
+      "detected_connections": [],
+      "test_duration": 0.680213212966919,
+      "relay_operations": 248
+    }
+  ]
+}
