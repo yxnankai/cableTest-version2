@@ -682,8 +682,15 @@ class AdaptiveGroupingTester:
                     # 更新继电器状态
                     self.update_relay_states(power_source, other_points)
                     
+                    # 🔧 重要：记录测试前的关系数量，用于计算新探查的关系数量
+                    before_relations = len(self.known_relations)
+                    
                     # 更新关系矩阵
                     self.update_relationship_matrix(test_result)
+                    
+                    # 计算新探查的关系数量
+                    after_relations = len(self.known_relations)
+                    new_relations = after_relations - before_relations
                     
                     # 记录测试历史
                     self.tested_combinations.add(combination_key)
@@ -842,9 +849,16 @@ class AdaptiveGroupingTester:
         # 获取所有未知关系的点位对
         unknown_point_pairs = list(self.unknown_relations)
         
+        # 🔧 重要：记录测试前的关系数量，用于计算新探查的关系数量
+        initial_known_relations = len(self.known_relations)
+        
         while tests_run < max_tests and unknown_point_pairs:
-            # 选择一对未知关系的点位
-            point_pair = unknown_point_pairs.pop(0)
+            # 🔧 重要：智能选择点位对，优先选择概率较高的
+            point_pair = self.select_optimal_binary_pair(unknown_point_pairs)
+            if point_pair not in unknown_point_pairs:
+                continue
+                
+            unknown_point_pairs.remove(point_pair)
             point1, point2 = point_pair
             
             print(f"\n🔬 二分法测试 #{self.total_tests + 1}")
@@ -866,12 +880,25 @@ class AdaptiveGroupingTester:
                     
                     test_result['test_duration'] = test_duration
                     
+                    # 🔧 重要：记录测试前的关系数量，用于计算新探查的关系数量
+                    before_relations = len(self.known_relations)
+                    
                     # 更新关系矩阵
                     self.update_relationship_matrix(test_result)
+                    
+                    # 计算新探查的关系数量
+                    after_relations = len(self.known_relations)
+                    new_relations = after_relations - before_relations
                     
                     # 更新统计
                     self.total_tests += 1
                     tests_run += 1
+                    
+                    # 🔧 重要：显示新探查的关系数量
+                    if new_relations > 0:
+                        print(f"🎯 新探查到 {new_relations} 个点位关系！")
+                    else:
+                        print(f"📊 本次测试未发现新的点位关系")
                     
                     # 打印测试结果
                     print(f"✅ 测试完成")
@@ -887,6 +914,12 @@ class AdaptiveGroupingTester:
                     
                     print(f"通电次数: {power_on_count}次")  # 使用设置的值
                     print(f"测试耗时: {test_duration:.2f}秒")
+                    
+                    # 🔧 重要：显示新探查的关系数量
+                    if new_relations > 0:
+                        print(f"🎯 新探查到 {new_relations} 个点位关系！")
+                    else:
+                        print(f"📊 本次测试未发现新的点位关系")
                     
                     # 检查是否已经确认了这对点位的关系
                     if (point1, point2) not in self.unknown_relations:
@@ -912,8 +945,15 @@ class AdaptiveGroupingTester:
                                 
                                 reverse_result['test_duration'] = reverse_duration
                                 
+                                # 🔧 重要：记录反向测试前的关系数量
+                                before_reverse_relations = len(self.known_relations)
+                                
                                 # 更新关系矩阵
                                 self.update_relationship_matrix(reverse_result)
+                                
+                                # 计算反向测试新探查的关系数量
+                                after_reverse_relations = len(self.known_relations)
+                                new_reverse_relations = after_reverse_relations - before_reverse_relations
                                 
                                 # 更新统计
                                 self.total_tests += 1
@@ -932,6 +972,12 @@ class AdaptiveGroupingTester:
                                 
                                 print(f"通电次数: {power_on_count}次")  # 使用设置的值
                                 print(f"测试耗时: {reverse_duration:.2f}秒")
+                                
+                                # 🔧 重要：显示反向测试新探查的关系数量
+                                if new_reverse_relations > 0:
+                                    print(f"🎯 反向测试新探查到 {new_reverse_relations} 个点位关系！")
+                                else:
+                                    print(f"📊 反向测试未发现新的点位关系")
                                 
                                 # 再次检查关系是否确认
                                 if (point1, point2) not in self.unknown_relations:
@@ -958,13 +1004,97 @@ class AdaptiveGroupingTester:
         
         # 二分法测试完成统计
         binary_duration = time.time() - binary_start_time
+        total_new_relations = len(self.known_relations) - initial_known_relations
+        
         print(f"\n🎯 二分法测试完成")
         print(f"运行测试: {tests_run} 次")
         print(f"测试耗时: {binary_duration:.2f} 秒")
+        print(f"新探查关系: {total_new_relations} 个")
         print(f"剩余未知关系: {len(self.unknown_relations)} 个")
         print(f"累计测试: {self.total_tests} 次")
         
         return tests_run
+    
+    def select_optimal_binary_pair(self, unknown_point_pairs: List[Tuple[int, int]]) -> Tuple[int, int]:
+        """智能选择二分法测试的点位对 - 优先选择概率较高的"""
+        if not unknown_point_pairs:
+            return None
+        
+        # 🔧 重要：实现真正的二分查找逻辑
+        # 1. 优先选择与其他点位关系较多的点位
+        # 2. 基于已知关系进行概率估计
+        # 3. 避免重复测试已经确认的关系
+        
+        best_pair = None
+        best_score = -1
+        
+        for point_pair in unknown_point_pairs:
+            point1, point2 = point_pair
+            
+            # 计算点位对的测试价值分数
+            score = self.calculate_binary_pair_score(point1, point2)
+            
+            if score > best_score:
+                best_score = score
+                best_pair = point_pair
+        
+        if best_pair:
+            print(f"🔍 选择最优二分法测试对: {best_pair} (分数: {best_score:.2f})")
+        
+        return best_pair or unknown_point_pairs[0]
+    
+    def calculate_binary_pair_score(self, point1: int, point2: int) -> float:
+        """计算二分法测试点位对的分数 - 基于概率和关系密度"""
+        score = 0.0
+        
+        # 1. 基于已知关系的概率估计
+        # 如果点位1或点位2与其他点位有较多已知关系，说明它们更可能是导通点
+        point1_known_relations = sum(1 for p in range(self.total_points) 
+                                   if p != point1 and (point1, p) in self.known_relations)
+        point2_known_relations = sum(1 for p in range(self.total_points) 
+                                   if p != point2 and (point2, p) in self.known_relations)
+        
+        # 关系密度越高，分数越高
+        score += (point1_known_relations + point2_known_relations) * 0.1
+        
+        # 2. 基于点位在集群中的位置
+        # 如果点位在同一个集群中，测试价值更高
+        point1_cluster = self.get_point_cluster(point1)
+        point2_cluster = self.get_point_cluster(point2)
+        
+        if point1_cluster == point2_cluster:
+            score += 2.0  # 同集群测试优先级更高
+        
+        # 3. 基于点位的测试历史
+        # 测试次数越少的点位，优先级越高
+        point1_test_count = self.get_point_test_count(point1)
+        point2_test_count = self.get_point_test_count(point2)
+        
+        score += (10 - point1_test_count - point2_test_count) * 0.5
+        
+        # 4. 基于点位的空间分布
+        # 距离较近的点位，测试价值更高
+        distance = abs(point1 - point2)
+        if distance <= 10:  # 距离小于等于10的点位对
+            score += 1.0
+        
+        return score
+    
+    def get_point_cluster(self, point: int) -> int:
+        """获取点位所属的集群ID"""
+        for cluster_id, cluster in enumerate(self.clusters):
+            if point in cluster:
+                return cluster_id
+        return -1  # 未分配集群
+    
+    def get_point_test_count(self, point: int) -> int:
+        """获取点位的测试次数"""
+        count = 0
+        for test_record in self.test_history:
+            if (test_record.get('power_source') == point or 
+                point in test_record.get('test_points', [])):
+                count += 1
+        return count
     
     def print_current_status(self):
         """打印当前状态"""
