@@ -14,10 +14,12 @@ SERVER_CONFIG = {
 # 批量测试配置
 BATCH_TESTING = {
     'enabled': True,
-    'default_batch_size': 50,      # 默认批量大小
+    'default_batch_size': 40,      # 默认批量大小（调整为50%左右）
     'min_batch_size': 20,          # 最小批量大小
-    'max_batch_size': 80,          # 最大批量大小
+    'max_batch_size': 50,          # 最大批量大小（从80调整为50）
     'adaptive_batch_size': True,   # 启用自适应批量大小
+    'smart_deduplication': True,   # 启用智能去重
+    'avoid_known_relations': True, # 避免测试已知关系
 }
 
 # 并发配置
@@ -30,10 +32,22 @@ CONCURRENCY = {
 
 # 测试策略配置
 TEST_STRATEGY = {
-    'strategy': 'massive_batch',    # 策略：massive_batch, adaptive, hybrid
+    'strategy': 'massive_batch',    # 策略：massive_batch, adaptive, hybrid, binary_search
     'priority_based_ordering': True,  # 基于优先级排序
     'unknown_relation_focus': True,   # 优先测试未知关系
     'batch_optimization': True,       # 启用批量优化
+    'binary_search_enabled': True,    # 启用二分法智能测试
+}
+
+# 二分法测试配置
+BINARY_SEARCH_CONFIG = {
+    'enabled': True,
+    'batch_size': 20,                # 二分法测试的批次大小（较小以提高精度）
+    'probability_threshold': 0.5,     # 导通概率阈值
+    'neighbor_weight': 0.7,          # 邻居关系权重
+    'global_density_weight': 0.3,    # 全局密度权重
+    'max_iterations_per_source': 5,  # 每个电源点的最大迭代次数
+    'adaptive_batch_sizing': True,   # 自适应批次大小
 }
 
 # 效率阈值配置
@@ -181,7 +195,7 @@ def validate_config():
 PRESET_CONFIGS = {
     'high_performance': {
         'description': '高性能配置 - 适合大规模系统',
-        'batch_size': 80,
+        'batch_size': 50,           # 从80调整为50（50%覆盖率）
         'max_concurrent_requests': 20,
         'request_batch_size': 30,
         'detection_rate_target': 98.0,
@@ -199,6 +213,15 @@ PRESET_CONFIGS = {
         'max_concurrent_requests': 5,
         'request_batch_size': 10,
         'detection_rate_target': 90.0,
+    },
+    'binary_search': {
+        'description': '二分法智能配置 - 适合高精度测试',
+        'batch_size': 20,
+        'max_concurrent_requests': 8,
+        'request_batch_size': 15,
+        'detection_rate_target': 98.0,
+        'binary_search_batch_size': 15,
+        'probability_threshold': 0.6,
     }
 }
 

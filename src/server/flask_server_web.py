@@ -64,7 +64,10 @@ class WebFlaskTestServer:
         print(f"  测试点位: {[p for p in test_result.active_points if p != test_result.power_source]}")
         print(f"  继电器操作: {test_result.relay_operations}")
         print(f"  当前激活点位: {test_result.active_points}")
-        print(f"  当前点位状态: {self.current_point_states}")
+        # 🔧 重要：显示正确的继电器状态，而不是空的 current_point_states
+        relay_states = self.test_system.relay_manager.relay_states
+        active_relay_states = {k: v.value for k, v in relay_states.items() if v.value == 1}
+        print(f"  当前继电器状态: {active_relay_states}")
         # 追加：每次试验完成后的线缆拓扑简报
         try:
             un = self.test_system.get_unconfirmed_cluster_relationships() or {}
