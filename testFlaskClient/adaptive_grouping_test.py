@@ -496,10 +496,7 @@ class AdaptiveGroupingTester:
         return 1
     
     def should_switch_phase(self) -> bool:
-        """判断是否应该切换测试阶段"""
-        if self.current_phase >= len(self.group_ratios) - 1:
-            return False  # 已经是最后一个阶段
-        
+        """判断是否应该切换测试阶段 - 基于未知关系比例"""
         current_phase_tests = self.phase_test_counts[self.current_phase]
         min_tests = self.config['test_execution']['phase_switch_criteria']['min_tests_per_phase']
         
@@ -507,32 +504,87 @@ class AdaptiveGroupingTester:
         if current_phase_tests < min_tests:
             return False
         
-        # 检查未知关系比例
+        # 计算当前未知关系比例
         total_possible_relations = self.total_points * (self.total_points - 1)
         unknown_ratio = len(self.unknown_relations) / total_possible_relations
         
-        max_known_ratio = self.config['test_execution']['phase_switch_criteria']['max_known_ratio']
-        min_unknown_relations = self.config['test_execution']['phase_switch_criteria']['min_unknown_relations']
+        # 获取当前阶段的阈值配置
+        phase_thresholds = self.config['test_execution']['phase_switch_criteria']['phase_thresholds']
         
-        # 如果已知关系过多或未知关系过少，切换阶段
-        if unknown_ratio < min_unknown_relations:
-            print(f"🔄 未知关系比例过低 ({unknown_ratio:.1%})，准备切换阶段")
+        # 确定当前阶段
+        current_phase_name = self.get_current_phase_name(unknown_ratio)
+        target_phase_name = self.get_target_phase_name(unknown_ratio)
+        
+        # 如果目标阶段与当前阶段不同，需要切换
+        if current_phase_name != target_phase_name:
+            print(f"🔄 未知关系比例: {unknown_ratio:.1%}")
+            print(f"当前阶段: {current_phase_name}")
+            print(f"目标阶段: {target_phase_name}")
+            print(f"准备切换阶段")
             return True
         
         return False
     
+    def get_current_phase_name(self, unknown_ratio: float) -> str:
+        """根据当前分组比例确定当前阶段名称"""
+        current_ratio = self.group_ratios[self.current_phase]
+        phase_thresholds = self.config['test_execution']['phase_switch_criteria']['phase_thresholds']
+        
+        for phase_name, threshold in phase_thresholds.items():
+            if abs(threshold['group_ratio'] - current_ratio) < 0.01:  # 允许小的浮点误差
+                return phase_name
+        
+        return f"phase_{self.current_phase + 1}"
+    
+    def get_target_phase_name(self, unknown_ratio: float) -> str:
+        """根据未知关系比例确定目标阶段名称"""
+        phase_thresholds = self.config['test_execution']['phase_switch_criteria']['phase_thresholds']
+        
+        for phase_name, threshold in phase_thresholds.items():
+            min_ratio = threshold['min_unknown_ratio']
+            max_ratio = threshold['max_unknown_ratio']
+            
+            if min_ratio <= unknown_ratio <= max_ratio:
+                return phase_name
+        
+        # 如果都不匹配，返回二分法阶段
+        return 'binary_search'
+    
     def switch_to_next_phase(self):
-        """切换到下一个测试阶段"""
-        if self.current_phase >= len(self.group_ratios) - 1:
-            print("🏁 已到达最后一个测试阶段")
+        """切换到下一个测试阶段 - 基于未知关系比例"""
+        # 计算当前未知关系比例
+        total_possible_relations = self.total_points * (self.total_points - 1)
+        unknown_ratio = len(self.unknown_relations) / total_possible_relations
+        
+        # 获取目标阶段
+        target_phase_name = self.get_target_phase_name(unknown_ratio)
+        phase_thresholds = self.config['test_execution']['phase_switch_criteria']['phase_thresholds']
+        
+        if target_phase_name not in phase_thresholds:
+            print(f"🏁 切换到二分法阶段")
             return False
         
-        self.current_phase += 1
+        target_ratio = phase_thresholds[target_phase_name]['group_ratio']
+        
+        # 找到对应的阶段索引
+        target_phase_index = None
+        for i, ratio in enumerate(self.group_ratios):
+            if abs(ratio - target_ratio) < 0.01:  # 允许小的浮点误差
+                target_phase_index = i
+                break
+        
+        if target_phase_index is None:
+            print(f"⚠️ 无法找到匹配的阶段索引，保持当前阶段")
+            return False
+        
+        # 切换到目标阶段
+        self.current_phase = target_phase_index
         new_ratio = self.group_ratios[self.current_phase]
         
-        print(f"🔄 切换到测试阶段 {self.current_phase + 1}")
+        print(f"🔄 切换到测试阶段: {target_phase_name}")
         print(f"新的分组比例: {new_ratio:.1%}")
         print(f"新的分组大小: {self.get_current_group_size()}")
+        print(f"未知关系比例: {unknown_ratio:.1%}")
         
         return True
     

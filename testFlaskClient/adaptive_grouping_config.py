@@ -50,15 +50,20 @@ TEST_EXECUTION_CONFIG = {
     'max_total_tests': 2000,  # 最大总测试次数（考虑到组内全点位测试）
     'max_tests_per_phase': 500,  # 每阶段最大测试次数（考虑到组内全点位测试）
     'phase_switch_criteria': {
-        'min_unknown_relations': 0.2,  # 未知关系少于20%时切换阶段
-        'max_known_ratio': 0.8,  # 已知关系超过80%时切换阶段
+        # 基于未知关系比例的阶段切换策略
+        'phase_thresholds': {
+            'phase_1': {'min_unknown_ratio': 0.50, 'max_unknown_ratio': 1.0, 'group_ratio': 0.30},  # 30%集群策略：100%>未知关系>50%
+            'phase_2': {'min_unknown_ratio': 0.20, 'max_unknown_ratio': 0.50, 'group_ratio': 0.20},  # 20%集群策略：50%>未知关系>20%
+            'phase_3': {'min_unknown_ratio': 0.10, 'max_unknown_ratio': 0.20, 'group_ratio': 0.10},  # 10%集群策略：20%>未知关系>10%
+            'binary_search': {'min_unknown_ratio': 0.0, 'max_unknown_ratio': 0.10, 'group_ratio': 0.0},  # 二分法策略：10%>未知关系
+        },
         'min_tests_per_phase': 50,  # 每阶段最少测试次数
     },
     
     # 二分法测试配置
     'binary_search': {
         'enabled': True,  # 启用二分法测试
-        'switch_threshold': 0.85,  # 当已知关系超过85%时切换到二分法
+        'switch_threshold': 0.10,  # 当未知关系少于10%时切换到二分法
         'min_unknown_relations': 100,  # 当未知关系少于100个时切换到二分法
         'max_tests_per_pair': 2,  # 每对点位最多测试2次（正向+反向）
         'enable_reverse_testing': True,  # 启用反向测试
@@ -99,15 +104,17 @@ ADAPTIVE_GROUPING_STRATEGY = {
     'strategy_summary': """
     自适应分组测试策略：
     
-    1. 分组比例逐步递减：
-       - 第一阶段：30%点位一组
-       - 第二阶段：20%点位一组  
-       - 第三阶段：10%点位一组
+    1. 基于未知关系比例的阶段切换策略：
+       - 第一阶段（30%集群）：100% > 未知关系 > 50%
+       - 第二阶段（20%集群）：50% > 未知关系 > 20%
+       - 第三阶段（10%集群）：20% > 未知关系 > 10%
+       - 第四阶段（二分法）：10% > 未知关系
     
-    2. 关系未知性优化：
+    2. 集群内部关系未知性优化：
        - 优先选择关系未知的点位组合
        - 每组最多10%的点位关系已知
        - 动态调整分组以保持未知关系比例
+       - 确保集群内部关系尽可能未知
     
     3. 智能分组选择：
        - 最大化未知关系数量
@@ -116,7 +123,7 @@ ADAPTIVE_GROUPING_STRATEGY = {
     
     4. 动态策略调整：
        - 实时监控关系矩阵状态
-       - 自动切换测试阶段
+       - 基于未知关系比例自动切换测试阶段
        - 优化测试效率
     """
 }
