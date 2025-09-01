@@ -504,7 +504,36 @@ class AdaptiveGroupingTester:
         if current_phase_tests < min_tests:
             return False
         
-        # 计算当前未知关系比例
+        # 🔧 重要：优先使用服务端数据计算未知关系比例，确保与状态显示一致
+        try:
+            response = requests.get(f"{self.base_url}/api/system/info")
+            if response.status_code == 200:
+                system_info = response.json()
+                if system_info.get('success'):
+                    server_confirmed_count = system_info.get('confirmed_points_count', 0)
+                    total_possible_relations = self.total_points * (self.total_points - 1)
+                    unknown_ratio = (total_possible_relations - server_confirmed_count) / total_possible_relations
+                    
+                    # 获取当前阶段的阈值配置
+                    phase_thresholds = self.config['test_execution']['phase_switch_criteria']['phase_thresholds']
+                    
+                    # 确定当前阶段
+                    current_phase_name = self.get_current_phase_name(unknown_ratio)
+                    target_phase_name = self.get_target_phase_name(unknown_ratio)
+                    
+                    # 如果目标阶段与当前阶段不同，需要切换
+                    if current_phase_name != target_phase_name:
+                        print(f"🔄 未知关系比例: {unknown_ratio:.1%}")
+                        print(f"当前阶段: {current_phase_name}")
+                        print(f"目标阶段: {target_phase_name}")
+                        print(f"准备切换阶段")
+                        return True
+                    
+                    return False
+        except Exception as e:
+            print(f"⚠️  获取服务端数据失败，使用本地数据: {e}")
+        
+        # 如果服务端获取失败，使用本地数据作为备用
         total_possible_relations = self.total_points * (self.total_points - 1)
         unknown_ratio = len(self.unknown_relations) / total_possible_relations
         
@@ -527,13 +556,10 @@ class AdaptiveGroupingTester:
     
     def get_current_phase_name(self, unknown_ratio: float) -> str:
         """根据当前分组比例确定当前阶段名称"""
-        current_ratio = self.get_current_group_ratio()
-        phase_thresholds = self.config['test_execution']['phase_switch_criteria']['phase_thresholds']
-        
-        for phase_name, threshold in phase_thresholds.items():
-            if abs(threshold['group_ratio'] - current_ratio) < 0.01:  # 允许小的浮点误差
-                return phase_name
-        
+        # 使用当前阶段索引来确定阶段名称，避免循环依赖
+        phase_names = ['phase_1', 'phase_2', 'phase_3']
+        if self.current_phase < len(phase_names):
+            return phase_names[self.current_phase]
         return f"phase_{self.current_phase + 1}"
     
     def get_target_phase_name(self, unknown_ratio: float) -> str:
@@ -552,7 +578,51 @@ class AdaptiveGroupingTester:
     
     def switch_to_next_phase(self):
         """切换到下一个测试阶段 - 基于未知关系比例"""
-        # 计算当前未知关系比例
+        # 🔧 重要：优先使用服务端数据计算未知关系比例，确保与状态显示一致
+        try:
+            response = requests.get(f"{self.base_url}/api/system/info")
+            if response.status_code == 200:
+                system_info = response.json()
+                if system_info.get('success'):
+                    server_confirmed_count = system_info.get('confirmed_points_count', 0)
+                    total_possible_relations = self.total_points * (self.total_points - 1)
+                    unknown_ratio = (total_possible_relations - server_confirmed_count) / total_possible_relations
+                    
+                    # 获取目标阶段
+                    target_phase_name = self.get_target_phase_name(unknown_ratio)
+                    phase_thresholds = self.config['test_execution']['phase_switch_criteria']['phase_thresholds']
+                    
+                    if target_phase_name not in phase_thresholds:
+                        print(f"🏁 切换到二分法阶段")
+                        return False
+                    
+                    target_ratio = phase_thresholds[target_phase_name]['group_ratio']
+                    
+                    # 找到对应的阶段索引
+                    target_phase_index = None
+                    for i, ratio in enumerate(self.group_ratios):
+                        if abs(ratio - target_ratio) < 0.01:  # 允许小的浮点误差
+                            target_phase_index = i
+                            break
+                    
+                    if target_phase_index is None:
+                        print(f"⚠️ 无法找到匹配的阶段索引，保持当前阶段")
+                        return False
+                    
+                    # 切换到目标阶段
+                    self.current_phase = target_phase_index
+                    new_ratio = self.get_current_group_ratio()
+                    
+                    print(f"🔄 切换到测试阶段: {target_phase_name}")
+                    print(f"新的分组比例: {new_ratio:.1%}")
+                    print(f"新的分组大小: {self.get_current_group_size()}")
+                    print(f"未知关系比例: {unknown_ratio:.1%}")
+                    
+                    return True
+        except Exception as e:
+            print(f"⚠️  获取服务端数据失败，使用本地数据: {e}")
+        
+        # 如果服务端获取失败，使用本地数据作为备用
         total_possible_relations = self.total_points * (self.total_points - 1)
         unknown_ratio = len(self.unknown_relations) / total_possible_relations
         
@@ -590,7 +660,37 @@ class AdaptiveGroupingTester:
     
     def get_current_group_ratio(self) -> float:
         """获取当前阶段的分组比例 - 基于未知关系比例动态计算"""
-        # 计算当前未知关系比例
+        # 🔧 重要：优先使用服务端数据计算未知关系比例，确保与状态显示一致
+        try:
+            response = requests.get(f"{self.base_url}/api/system/info")
+            if response.status_code == 200:
+                system_info = response.json()
+                if system_info.get('success'):
+                    server_confirmed_count = system_info.get('confirmed_points_count', 0)
+                    total_possible_relations = self.total_points * (self.total_points - 1)
+                    unknown_ratio = (total_possible_relations - server_confirmed_count) / total_possible_relations
+                    
+                    # 获取目标阶段配置
+                    target_phase_name = self.get_target_phase_name(unknown_ratio)
+                    phase_thresholds = self.config['test_execution']['phase_switch_criteria']['phase_thresholds']
+                    
+                    # 如果是二分法阶段，返回0（不使用集群）
+                    if target_phase_name == 'binary_search' or target_phase_name not in phase_thresholds:
+                        return 0.0
+                    
+                    # 返回目标阶段的分组比例
+                    target_ratio = phase_thresholds[target_phase_name]['group_ratio']
+                    
+                    print(f"🔍 动态分组比例计算 (服务端数据):")
+                    print(f"  未知关系比例: {unknown_ratio:.1%}")
+                    print(f"  目标阶段: {target_phase_name}")
+                    print(f"  分组比例: {target_ratio:.1%}")
+                    
+                    return target_ratio
+        except Exception as e:
+            print(f"⚠️  获取服务端数据失败，使用本地数据: {e}")
+        
+        # 如果服务端获取失败，使用本地数据作为备用
         total_possible_relations = self.total_points * (self.total_points - 1)
         unknown_ratio = len(self.unknown_relations) / total_possible_relations
         
@@ -605,7 +705,7 @@ class AdaptiveGroupingTester:
         # 返回目标阶段的分组比例
         target_ratio = phase_thresholds[target_phase_name]['group_ratio']
         
-        print(f"🔍 动态分组比例计算:")
+        print(f"🔍 动态分组比例计算 (本地数据):")
         print(f"  未知关系比例: {unknown_ratio:.1%}")
         print(f"  目标阶段: {target_phase_name}")
         print(f"  分组比例: {target_ratio:.1%}")
