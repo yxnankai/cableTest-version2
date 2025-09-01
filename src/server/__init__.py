@@ -5,6 +5,7 @@
 """
 
 from .flask_server import app, FlaskTestServer
-from .flask_server_web import app as web_app, socketio
+from .flask_server_web import app as web_app
+# from .flask_server_web import socketio  # 暂时禁用WebSocket
 
-__all__ = ['app', 'web_app', 'socketio', 'FlaskTestServer']
+__all__ = ['app', 'web_app', 'FlaskTestServer']

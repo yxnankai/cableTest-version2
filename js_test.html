@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>JavaScript测试</title>
+</head>
+<body>
+    <h1>JavaScript测试</h1>
+    <div id="test">测试中...</div>
+    
+    <script>
+        console.log('=== JavaScript测试开始 ===');
+        
+        // 测试基本功能
+        document.getElementById('test').innerHTML = 'JavaScript基本功能正常';
+        
+        // 测试异步函数
+        async function testAsync() {
+            try {
+                console.log('开始异步测试...');
+                const response = await fetch('/api/system/info');
+                const data = await response.json();
+                console.log('异步测试成功:', data);
+                document.getElementById('test').innerHTML = '异步测试成功: ' + JSON.stringify(data);
+            } catch (error) {
+                console.error('异步测试失败:', error);
+                document.getElementById('test').innerHTML = '异步测试失败: ' + error.message;
+            }
+        }
+        
+        // 执行异步测试
+        testAsync();
+    </script>
+</body>
+</html>

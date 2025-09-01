@@ -30,6 +30,11 @@ def main():
     # 设置环境变量
     env = os.getenv('FLASK_ENV', 'testing')  # 默认使用测试环境（100个点位）
     
+    # 修复Windows SSL证书问题
+    os.environ['PYTHONHTTPSVERIFY'] = '0'
+    os.environ['SSL_CERT_FILE'] = ''
+    os.environ['SSL_CERT_DIR'] = ''
+    
     # 获取配置
     test_config = get_config(env)
     port = int(os.getenv('FLASK_PORT', getattr(test_config, 'FLASK_PORT', 5000)))
@@ -54,14 +59,16 @@ def main():
     logger.info(f"📡 WebSocket: ws://0.0.0.0:{port}/socket.io/")
     
     # 启动Flask服务器
-    from server.flask_server_web import app, socketio
+    from server.flask_server_web import app
+    # from server.flask_server_web import socketio  # 暂时禁用WebSocket
     
     logger.info(f"🚀 启动线缆测试系统Web服务器...")
     logger.info(f"📱 前端界面: http://localhost:{port}")
     logger.info(f"🔌 API接口: http://localhost:{port}/api/")
-    logger.info(f"📡 WebSocket: ws://localhost:{port}/socket.io/")
+    # logger.info(f"📡 WebSocket: ws://localhost:{port}/socket.io/")  # 暂时禁用WebSocket
     
-    socketio.run(app, host='0.0.0.0', port=port, debug=True)
+    # 使用简单的Flask开发服务器，避免WebSocket问题
+    app.run(host='0.0.0.0', port=port, debug=True, use_reloader=False)
 
 if __name__ == '__main__':
     main()

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API测试页面</title>
+</head>
+<body>
+    <h1>API测试页面</h1>
+    <div id="results"></div>
+    
+    <script>
+        async function testAPI() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<p>开始测试API...</p>';
+            
+            try {
+                console.log('测试系统信息API...');
+                const response1 = await fetch('/api/system/info');
+                const data1 = await response1.json();
+                console.log('系统信息:', data1);
+                results.innerHTML += '<p>✅ 系统信息API成功</p>';
+                
+                console.log('测试集群信息API...');
+                const response2 = await fetch('/api/clusters');
+                const data2 = await response2.json();
+                console.log('集群信息:', data2);
+                results.innerHTML += '<p>✅ 集群信息API成功</p>';
+                
+                console.log('测试点位状态API...');
+                const response3 = await fetch('/api/points/status');
+                const data3 = await response3.json();
+                console.log('点位状态:', data3);
+                results.innerHTML += '<p>✅ 点位状态API成功</p>';
+                
+                results.innerHTML += '<p>🎉 所有API测试成功！</p>';
+                
+            } catch (error) {
+                console.error('API测试失败:', error);
+                results.innerHTML += '<p>❌ API测试失败: ' + error.message + '</p>';
+            }
+        }
+        
+        // 页面加载完成后执行测试
+        window.onload = function() {
+            console.log('页面加载完成，开始API测试...');
+            testAPI();
+        };
+    </script>
+</body>
+</html>

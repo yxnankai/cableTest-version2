@@ -52,14 +52,16 @@ def main():
     logger.info(f"📡 WebSocket: ws://0.0.0.0:5000/socket.io/")
     
     # 启动Flask服务器
-    from server.flask_server_web import app, socketio
+    from server.flask_server_web import app
+    # from server.flask_server_web import socketio  # 暂时禁用WebSocket
     
     logger.info(f"🚀 启动线缆测试系统Web服务器...")
     logger.info(f"📱 前端界面: http://localhost:5000")
     logger.info(f"🔌 API接口: http://localhost:5000/api/")
-    logger.info(f"📡 WebSocket: ws://localhost:5000/socket.io/")
+    # logger.info(f"📡 WebSocket: ws://localhost:5000/socket.io/")  # 暂时禁用WebSocket
     
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+    # 使用简单的Flask开发服务器，避免WebSocket问题
+    app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False)
 
 if __name__ == '__main__':
     main()

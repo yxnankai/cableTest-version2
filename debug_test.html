@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>调试测试</title>
+</head>
+<body>
+    <h1>调试测试</h1>
+    <div id="debug">等待调试...</div>
+    
+    <script>
+        // 基本测试
+        console.log('=== 开始调试测试 ===');
+        
+        try {
+            // 测试DOM操作
+            const debugDiv = document.getElementById('debug');
+            debugDiv.innerHTML = 'DOM操作正常';
+            console.log('DOM操作成功');
+            
+            // 测试fetch API
+            console.log('开始测试fetch API...');
+            fetch('/api/system/info')
+                .then(response => {
+                    console.log('fetch响应状态:', response.status);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('API数据:', data);
+                    debugDiv.innerHTML = 'API调用成功: ' + JSON.stringify(data);
+                })
+                .catch(error => {
+                    console.error('fetch错误:', error);
+                    debugDiv.innerHTML = 'API调用失败: ' + error.message;
+                });
+                
+        } catch (error) {
+            console.error('JavaScript执行错误:', error);
+            document.getElementById('debug').innerHTML = 'JavaScript错误: ' + error.message;
+        }
+    </script>
+</body>
+</html>

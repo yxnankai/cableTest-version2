@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, render_template_string
 from flask_cors import CORS
-from flask_socketio import SocketIO, emit
+# from flask_socketio import SocketIO, emit  # 暂时禁用WebSocket
 from core.cable_test_system import CableTestSystem, TestResult, RelayState
 from core import config
 import json
@@ -12,7 +12,7 @@ import queue
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'cable_test_secret_key'
 CORS(app)
-socketio = SocketIO(app, cors_allowed_origins="*")
+# socketio = SocketIO(app, cors_allowed_origins="*")  # 暂时禁用WebSocket
 
 class WebFlaskTestServer:
     def __init__(self, total_points: int = None):
@@ -125,12 +125,13 @@ class WebFlaskTestServer:
     def _emit_status_update(self):
         """通过WebSocket发送状态更新"""
         try:
-            socketio.emit('status_update', {
-                'point_states': self.current_point_states,
-                'clusters': self.confirmed_clusters,  # 已经是字典格式
-                'test_history': self.test_history[-10:],  # 最近10次测试
-                'timestamp': time.time()
-            })
+            # socketio.emit('status_update', {  # 暂时禁用WebSocket
+            #     'point_states': self.current_point_states,
+            #     'clusters': self.confirmed_clusters,  # 已经是字典格式
+            #     'test_history': self.test_history[-10:],  # 最近10次测试
+            #     'timestamp': time.time()
+            # })
+            pass  # 暂时禁用WebSocket
         except Exception as e:
             print(f"WebSocket发送失败: {e}")
     
@@ -233,6 +234,72 @@ class WebFlaskTestServer:
             'confirmed_non_conductive_count': confirmed_non_conductive_count,  # 确认的不导通关系数量
             'timestamp': time.time()
         }
+
+    def get_test_progress(self) -> Dict[str, Any]:
+        """获取实验进度数据"""
+        try:
+            # 获取测试历史
+            test_history = self.test_system.test_history
+            
+            # 构建进度数据
+            progress_data = []
+            current_known_relations = 0
+            
+            for i, test_result in enumerate(test_history):
+                # 计算当前测试后的已知关系数量
+                # 这里需要根据测试结果更新已知关系数量
+                # 由于每次测试可能发现多个关系，我们需要累加
+                
+                # 获取当前测试发现的连接数量
+                connections_found = len(test_result.detected_connections)
+                current_known_relations += connections_found
+                
+                # 确定当前使用的策略
+                # 这里需要根据测试的特征来判断策略
+                strategy = self._determine_test_strategy(test_result)
+                
+                progress_data.append({
+                    'test_id': i + 1,
+                    'known_relations': current_known_relations,
+                    'strategy': strategy,
+                    'timestamp': test_result.timestamp if hasattr(test_result, 'timestamp') else time.time(),
+                    'connections_found': connections_found,
+                    'power_source': test_result.power_source,
+                    'test_points_count': len(test_result.active_points) - 1  # 排除电源点位
+                })
+            
+            return {
+                'success': True,
+                'data': progress_data,
+                'timestamp': time.time()
+            }
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
+    
+    def _determine_test_strategy(self, test_result) -> str:
+        """根据测试结果确定使用的策略"""
+        try:
+            # 根据测试点位数量来判断策略
+            test_points_count = len(test_result.active_points) - 1  # 排除电源点位
+            total_points = self.test_system.total_points
+            
+            # 计算测试点位占总点位的比例
+            if test_points_count == 0:
+                return 'unknown'
+            
+            ratio = test_points_count / total_points
+            
+            # 根据比例判断策略
+            if ratio > 0.25:  # 大于25%
+                return 'phase_1'  # 30%集群策略
+            elif ratio > 0.15:  # 15%-25%
+                return 'phase_2'  # 20%集群策略
+            elif ratio > 0.05:  # 5%-15%
+                return 'phase_3'  # 10%集群策略
+            else:  # 小于5%
+                return 'binary_search'  # 二分法策略
+        except Exception:
+            return 'unknown'
 
     # ============== 新增：点-点关系接口封装 ==============
     def get_relationship_summary(self) -> Dict[str, Any]:
@@ -429,6 +496,11 @@ HTML_TEMPLATE = """
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>线缆测试系统 - 实时监控</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <!-- 暂时禁用WebSocket -->
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script> -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
     <style>
         body { font-family: 'Microsoft YaHei', Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
         .container { max-width: 1400px; margin: 0 auto; }
@@ -518,6 +590,7 @@ HTML_TEMPLATE = """
             .dashboard { grid-template-columns: 1fr; }
             .status-grid { grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); }
         }
+        }
     </style>
 </head>
 <body>
@@ -541,76 +614,91 @@ HTML_TEMPLATE = """
                     使用示例: "1,3,5" 或 "10-15" 或 "1,5-8,20" 或留空测试所有点位
                 </small>
             </div>
-                         <button class="btn" onclick="runExperiment()">开始实验</button>
-             <button class="btn" onclick="runRandomExperiment()" style="background: #ff9800; margin-left: 10px;">随机实验</button>
-             <div class="form-group" style="margin-top: 10px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                 <label>总点位:</label>
-                 <input type="number" id="totalPoints" placeholder="总点位 (>=2)" min="2" value="100" style="width: 120px;" onchange="updateConductivityDefaults()" />
-                 <label>导通分布设置:</label>
-                 <div style="display: flex; gap: 4px; align-items: center;">
-                     <span>1个:</span>
-                     <input type="number" id="conductivity1" placeholder="数量" min="0" value="90" style="width: 60px;" />
-                     <span>2个:</span>
-                     <input type="number" id="conductivity2" placeholder="数量" min="0" value="6" style="width: 60px;" />
-                     <span>3个:</span>
-                     <input type="number" id="conductivity3" placeholder="数量" min="0" value="3" style="width: 60px;" />
-                     <span>4个:</span>
-                     <input type="number" id="conductivity4" placeholder="数量" min="0" value="1" style="width: 60px;" />
-                 </div>
-                 <small style="color: #666; display: block; margin-top: 5px;">
-                     说明：数字表示除自己以外，作为通电点位时能够导通的其他点位数量
-                 </small>
-                 <button class="btn" onclick="resetSystem()" style="background: #f44336;">重置系统</button>
-             </div>
+            <div style="margin-top: 15px;">
+                <button class="btn" onclick="runExperiment()">开始实验</button>
+                <button class="btn" onclick="runRandomExperiment()" style="background: #ff9800; margin-left: 10px;">随机实验</button>
+            </div>
+            <div class="form-group" style="margin-top: 10px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                <label>总点位:</label>
+                <input type="number" id="totalPoints" placeholder="总点位 (>=2)" min="2" value="100" style="width: 120px;" onchange="updateConductivityDefaults()" />
+                <label>导通分布设置:</label>
+                <div style="display: flex; gap: 4px; align-items: center;">
+                    <span>1个:</span>
+                    <input type="number" id="conductivity1" placeholder="数量" min="0" value="90" style="width: 60px;" />
+                    <span>2个:</span>
+                    <input type="number" id="conductivity2" placeholder="数量" min="0" value="6" style="width: 60px;" />
+                    <span>3个:</span>
+                    <input type="number" id="conductivity3" placeholder="数量" min="0" value="3" style="width: 60px;" />
+                    <span>4个:</span>
+                    <input type="number" id="conductivity4" placeholder="数量" min="0" value="1" style="width: 60px;" />
+                </div>
+                <small style="color: #666; display: block; margin-top: 5px;">
+                    说明：数字表示除自己以外，作为通电点位时能够导通的其他点位数量
+                </small>
+                <button class="btn" onclick="resetSystem()" style="background: #f44336;">重置系统</button>
+            </div>
         </div>
         
-                 <div class="dashboard">
-             <div class="card">
-                 <h3>📊 系统状态</h3>
-                 <div id="systemInfo">
-                     <div class="loading">加载中...</div>
-                 </div>
-             </div>
-             
-                              <div class="card">
-                 <h3>🔗 点对关系信息</h3>
-                 <div id="clusterInfo">
-                     <div class="loading">加载中...</div>
-                 </div>
-                 <div style="margin-top: 15px;">
-                     <button class="btn" onclick="showDetailedClusters()" style="background: #2196F3; padding: 8px 16px; font-size: 14px;">
-                         详细点对信息
-                     </button>
-                     
-
-                     
-                     <button class="btn" onclick="showConfirmedNonConductive()" style="background: #795548; padding: 8px 16px; font-size: 14px;">
-                         已确认不导通
-                     </button>
-                     
-                     <button class="btn" onclick="showRelationshipMatrix()" style="background: #00BCD4; padding: 8px 16px; font-size: 14px;">
-                         检测到的关系矩阵
-                     </button>
-                     
-                     <button class="btn" onclick="showTrueRelationshipMatrix()" style="background: #E91E63; padding: 8px 16px; font-size: 14px;">
-                         真实关系矩阵
-                     </button>
-                     
-                     <button class="btn" onclick="showMatricesComparison()" style="background: #9C27B0; padding: 8px 16px; font-size: 14px;">
-                         矩阵对比
-                     </button>
-                     
-                     <button class="btn" onclick="showRealConductiveInfo()" style="background: #FF9800; padding: 8px 16px; font-size: 14px;">
-                         真实导通点位信息
-                     </button>
-                 </div>
-             </div>
-         </div>
+        <div class="dashboard">
+            <div class="card">
+                <h3>📊 系统状态</h3>
+                <div id="systemInfo">
+                    <div class="loading">加载中...</div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3>🔗 点对关系信息</h3>
+                <div id="clusterInfo">
+                    <div class="loading">加载中...</div>
+                </div>
+                <div style="margin-top: 15px;">
+                    <button class="btn" onclick="showDetailedClusters()" style="background: #2196F3; padding: 8px 16px; font-size: 14px;">
+                        详细点对信息
+                    </button>
+                    
+                    <button class="btn" onclick="showConfirmedNonConductive()" style="background: #795548; padding: 8px 16px; font-size: 14px;">
+                        已确认不导通
+                    </button>
+                    
+                    <button class="btn" onclick="showRelationshipMatrix()" style="background: #00BCD4; padding: 8px 16px; font-size: 14px;">
+                        检测到的关系矩阵
+                    </button>
+                    
+                    <button class="btn" onclick="showTrueRelationshipMatrix()" style="background: #E91E63; padding: 8px 16px; font-size: 14px;">
+                        真实关系矩阵
+                    </button>
+                    
+                    <button class="btn" onclick="showMatricesComparison()" style="background: #9C27B0; padding: 8px 16px; font-size: 14px;">
+                        矩阵对比
+                    </button>
+                    
+                    <button class="btn" onclick="showRealConductiveInfo()" style="background: #FF9800; padding: 8px 16px; font-size: 14px;">
+                        真实导通点位信息
+                    </button>
+                </div>
+            </div>
+        </div>
         
         <div class="card">
             <h3>📍 点位状态概览</h3>
             <div id="pointStatus">
                 <div class="loading">加载中...</div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h3>📈 实验进度图表</h3>
+            <div id="progressChart" style="height: 400px; width: 100%;">
+                <div class="loading">加载中...</div>
+            </div>
+            <div style="margin-top: 10px; text-align: center;">
+                <button class="btn" onclick="refreshProgressChart()" style="background: #4CAF50; padding: 8px 16px; font-size: 14px;">
+                    刷新图表
+                </button>
+                <button class="btn" onclick="exportChartData()" style="background: #FF9800; padding: 8px 16px; font-size: 14px; margin-left: 10px;">
+                    导出数据
+                </button>
             </div>
         </div>
         
@@ -623,9 +711,18 @@ HTML_TEMPLATE = """
     </div>
 
     <script>
-        const socket = io();
+        // const socket = io();  // 暂时禁用WebSocket
         let lastUpdate = 0;
         let fallbackIntervalId = null; // 轮询模式定时器ID
+        let progressChart = null; // 进度图表实例
+        let chartData = []; // 图表数据
+        let strategyColors = {
+            'phase_1': '#FF6384', // 30%集群策略 - 红色
+            'phase_2': '#36A2EB', // 20%集群策略 - 蓝色
+            'phase_3': '#FFCE56', // 10%集群策略 - 黄色
+            'binary_search': '#4BC0C0' // 二分法策略 - 青色
+        };
+        
         // 连接组ID到短名称的映射，保持会话内稳定
         const clusterIdToShortName = {};
         function getShortClusterName(clusterId) {
@@ -638,70 +735,151 @@ HTML_TEMPLATE = """
         }
         
         // 连接状态处理
-        socket.on('connect', () => {
-            console.log('WebSocket已连接');
-            loadInitialData();
-        });
+        // socket.on('connect', () => {
+        //     console.log('WebSocket已连接');
+        //     loadInitialData();
+        // });
         
-        socket.on('disconnect', () => {
-            console.log('WebSocket连接断开');
-            startFallbackPolling();
-        });
+        // socket.on('disconnect', () => {
+        //     console.log('WebSocket连接断开');
+        //     startFallbackPolling();
+        // });
 
-        // 连接失败时启用兜底轮询
-        socket.on('connect_error', (err) => {
-            console.warn('WebSocket连接失败，启用轮询模式', err);
-            startFallbackPolling();
-        });
+        // // 连接失败时启用兜底轮询
+        // socket.on('connect_error', (err) => {
+        //     console.warn('WebSocket连接失败，启用轮询模式', err);
+        //     startFallbackPolling();
+        // });
         
-                 // 实时状态更新
-         socket.on('status_update', (data) => {
-             lastUpdate = Date.now();
-             console.log('收到WebSocket更新:', data);
-             
-             if (data.point_states) {
-                 updatePointStatus(data.point_states);
-             }
-             if (data.clusters) {
-                 updateClusterInfo(data.clusters);
-             }
-             if (data.test_history) {
-                 updateTestHistory(data.test_history);
-             }
-             
-             // 刷新系统信息
-             refreshSystemInfo();
+        // // 处理WebSocket错误
+        // socket.on('error', (err) => {
+        //     console.error('WebSocket错误:', err);
+        //     startFallbackPolling();
+        // });
+        
+        // 直接加载初始数据，不使用WebSocket
+        console.log('直接加载初始数据...');
+        loadInitialData();
+        
+        // 实时状态更新
+        // socket.on('status_update', (data) => {
+        //     lastUpdate = Date.now();
+        //     console.log('收到WebSocket更新:', data);
+        //     
+        //     if (data.point_states) {
+        //         updatePointStatus(data.point_states);
+        //     }
+        //     if (data.clusters) {
+        //         updateClusterInfo(data.clusters);
+        //     }
+        //     if (data.test_history) {
+        //         updateTestHistory(data.test_history);
+        //     }
+        //     
+        //     // 刷新系统信息
+        //     refreshSystemInfo();
+        //     
+        //     // 更新进度图表
+        //     updateProgressChart();
 
-             // 收到实时数据后，若在轮询模式则停止轮询
-             if (fallbackIntervalId) {
-                 clearInterval(fallbackIntervalId);
-                 fallbackIntervalId = null;
-             }
-         });
-         
-         // 刷新系统信息
-         async function refreshSystemInfo() {
-             try {
-                 const response = await fetch('/api/system/info');
-                 const data = await response.json();
-                 updateSystemInfo(data);
-             } catch (error) {
-                 console.error('刷新系统信息失败:', error);
-             }
-         }
+        //     // 收到实时数据后，若在轮询模式则停止轮询
+        //     if (fallbackIntervalId) {
+        //         clearInterval(fallbackIntervalId);
+        //         fallbackIntervalId = null;
+        //     }
+        // });
+        
+        // 刷新系统信息
+        async function refreshSystemInfo() {
+            try {
+                const response = await fetch('/api/system/info');
+                const data = await response.json();
+                updateSystemInfo(data);
+            } catch (error) {
+                console.error('刷新系统信息失败:', error);
+            }
+        }
         
         // 加载初始数据
         async function loadInitialData() {
             try {
-                const [systemInfo, clusterInfo, pointStatus, testHistory, unconfirmed] = await Promise.all([
-                    fetch('/api/system/info?ts='+Date.now()).then(r => r.json()),
-                    fetch('/api/clusters?ts='+Date.now()).then(r => r.json()),
-                    fetch('/api/points/status?ts='+Date.now()).then(r => r.json()),
-                    fetch('/api/test/history?page=1&page_size=50&ts='+Date.now()).then(r => r.json()),
-                    fetch('/api/clusters/unconfirmed_relationships?ts='+Date.now()).then(r => r.json())
-                ]);
+                console.log('开始加载初始数据...');
                 
-                                 // 拓扑是否已完成
+                // 逐个测试API调用，避免一个失败影响全部
+                let systemInfo = null;
+                let clusterInfo = null;
+                let pointStatus = null;
+                let testHistory = null;
+                let unconfirmed = null;
+                
+                try {
+                    console.log('获取系统信息...');
+                    const response = await fetch('/api/system/info?ts='+Date.now());
+                    if (response.ok) {
+                        systemInfo = await response.json();
+                        console.log('系统信息获取成功:', systemInfo);
+                    } else {
+                        console.error('系统信息API失败:', response.status, response.statusText);
+                    }
+                } catch (e) {
+                    console.error('获取系统信息失败:', e);
+                }
+                
+                try {
+                    console.log('获取集群信息...');
+                    const response = await fetch('/api/clusters?ts='+Date.now());
+                    if (response.ok) {
+                        clusterInfo = await response.json();
+                        console.log('集群信息获取成功:', clusterInfo);
+                    } else {
+                        console.error('集群信息API失败:', response.status, response.statusText);
+                    }
+                } catch (e) {
+                    console.error('获取集群信息失败:', e);
+                }
+                
+                try {
+                    console.log('获取点位状态...');
+                    const response = await fetch('/api/points/status?ts='+Date.now());
+                    if (response.ok) {
+                        pointStatus = await response.json();
+                        console.log('点位状态获取成功:', pointStatus);
+                    } else {
+                        console.error('点位状态API失败:', response.status, response.statusText);
+                    }
+                } catch (e) {
+                    console.error('获取点位状态失败:', e);
+                }
+                
+                try {
+                    console.log('获取测试历史...');
+                    const response = await fetch('/api/test/history?page=1&page_size=50&ts='+Date.now());
+                    if (response.ok) {
+                        testHistory = await response.json();
+                        console.log('测试历史获取成功:', testHistory);
+                    } else {
+                        console.error('测试历史API失败:', response.status, response.statusText);
+                    }
+                } catch (e) {
+                    console.error('获取测试历史失败:', e);
+                }
+                
+                try {
+                    console.log('获取未确认关系...');
+                    const response = await fetch('/api/clusters/unconfirmed_relationships?ts='+Date.now());
+                    if (response.ok) {
+                        unconfirmed = await response.json();
+                        console.log('未确认关系获取成功:', unconfirmed);
+                    } else {
+                        console.error('未确认关系API失败:', response.status, response.statusText);
+                    }
+                } catch (e) {
+                    console.error('获取未确认关系失败:', e);
+                }
+                
+                console.log('所有API调用完成，开始处理数据...');
+                
+                // 拓扑是否已完成
                 let topoDoneInit = false;
                 try {
                     const s = (unconfirmed && unconfirmed.data && unconfirmed.data.summary) || {};
@@ -712,25 +890,41 @@ HTML_TEMPLATE = """
                         (s.total_unconfirmed_point_to_point_relationships || 0) === 0
                     );
                 } catch (_) {}
-                systemInfo.__topologyDone = topoDoneInit;
-                updateSystemInfo(systemInfo);
-                 updateClusterInfo(clusterInfo.clusters || []);
-                 updatePointStatus(pointStatus.point_states || {});
-                 // 历史归档：完成后也保留历史
-                 if (testHistory && testHistory.success && testHistory.data) {
-                     renderHistoryItems(testHistory.data.items || []);
-                 } else {
-                     updateTestHistory(testHistory.test_history || []);
-                 }
-                 
-                 console.log('初始数据加载完成:', {
-                     systemInfo,
-                     clusterInfo,
-                     pointStatus,
-                     testHistory
-                 });
+                
+                if (systemInfo) {
+                    systemInfo.__topologyDone = topoDoneInit;
+                    updateSystemInfo(systemInfo);
+                }
+                
+                if (clusterInfo) {
+                    updateClusterInfo(clusterInfo.clusters || []);
+                }
+                
+                if (pointStatus) {
+                    updatePointStatus(pointStatus.point_states || {});
+                }
+                
+                // 历史归档：完成后也保留历史
+                if (testHistory && testHistory.success && testHistory.data) {
+                    renderHistoryItems(testHistory.data.items || []);
+                } else if (testHistory) {
+                    updateTestHistory(testHistory.test_history || []);
+                }
+                
+                console.log('初始数据加载完成');
+                
+                // 初始化并更新进度图表
+                console.log('开始初始化图表...');
+                initProgressChart();
+                await updateProgressChart();
+                console.log('图表初始化完成');
+                
             } catch (error) {
                 console.error('加载初始数据失败:', error);
+                // 显示错误信息给用户
+                document.querySelectorAll('.loading').forEach(el => {
+                    el.innerHTML = '加载失败，请刷新页面重试';
+                });
             }
         }
 
@@ -746,141 +940,255 @@ HTML_TEMPLATE = """
             }, 5000);
         }
         
+        // 初始化进度图表
+        function initProgressChart() {
+            const ctx = document.getElementById('progressChart');
+            if (!ctx) {
+                console.error('找不到图表容器');
+                return;
+            }
+            
+            // 销毁现有图表
+            if (progressChart) {
+                progressChart.destroy();
+            }
+            
+            progressChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: '已知关系数量',
+                        data: [],
+                        borderColor: '#4CAF50',
+                        backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: '实验进度 - 已知关系数量变化'
+                        },
+                        legend: {
+                            display: true
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                afterBody: function(context) {
+                                    const dataIndex = context[0].dataIndex;
+                                    const dataPoint = chartData[dataIndex];
+                                    if (dataPoint && dataPoint.strategy) {
+                                        return `策略: ${getStrategyName(dataPoint.strategy)}`;
+                                    }
+                                    return '';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: '实验序号'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: '已知关系数量'
+                            },
+                            beginAtZero: true
+                        }
+                    },
+                    interaction: {
+                        mode: 'nearest',
+                        axis: 'x',
+                        intersect: false
+                    }
+                }
+            });
+            
+            console.log('图表初始化完成');
+        }
+        
+        // 获取策略名称
+        function getStrategyName(strategy) {
+            const strategyNames = {
+                'phase_1': '30%集群策略',
+                'phase_2': '20%集群策略', 
+                'phase_3': '10%集群策略',
+                'binary_search': '二分法策略'
+            };
+            return strategyNames[strategy] || strategy;
+        }
+        
+        // 更新进度图表
+        async function updateProgressChart() {
+            try {
+                const response = await fetch('/api/test/progress');
+                const data = await response.json();
+                
+                if (data.success && data.data) {
+                    chartData = data.data;
+                    
+                    // 准备图表数据
+                    const labels = chartData.map((item, index) => index + 1);
+                    const values = chartData.map(item => item.known_relations);
+                    
+                    // 更新图表
+                    if (progressChart) {
+                        progressChart.data.labels = labels;
+                        progressChart.data.datasets[0].data = values;
+                        progressChart.update();
+                        
+                        console.log(`图表更新完成，数据点: ${chartData.length}`);
+                    }
+                } else {
+                    console.warn('获取进度数据失败:', data.error || '未知错误');
+                }
+            } catch (error) {
+                console.error('更新进度图表失败:', error);
+            }
+        }
+        
+        // 刷新进度图表
+        function refreshProgressChart() {
+            updateProgressChart();
+        }
+        
+        // 导出图表数据
+        function exportChartData() {
+            if (chartData.length === 0) {
+                alert('暂无数据可导出');
+                return;
+            }
+            
+            const csvContent = [
+                ['实验序号', '已知关系数量', '策略', '时间戳'],
+                ...chartData.map((item, index) => [
+                    index + 1,
+                    item.known_relations,
+                    getStrategyName(item.strategy),
+                    new Date(item.timestamp * 1000).toLocaleString('zh-CN')
+                ])
+            ].map(row => row.join(',')).join('\n');
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `实验进度数据_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
                  // 更新系统信息
-         function updateSystemInfo(data) {
-             if (data.success) {
-                 const totalPowerOns = data.total_power_on_operations ?? 0;
-                 document.getElementById('systemInfo').innerHTML = `
-                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                         <div><strong>总点位:</strong> ${data.total_points.toLocaleString()}</div>
-                         <div><strong>继电器切换时间:</strong> ${(data.relay_switch_time * 1000).toFixed(1)}ms</div>
-                         <div><strong>当前已确认的点位关系数:</strong> ${data.confirmed_points_count || 0}</div>
-                         <div><strong>检测到的导通关系:</strong> ${data.detected_conductive_count || 0}</div>
-                         <div><strong>总测试次数:</strong> ${data.total_tests}</div>
-                         <div><strong>继电器操作总次数:</strong> ${data.total_relay_operations || 0}</div>
-                         <div><strong>通电次数总和:</strong> ${totalPowerOns}</div>
-                         <div><strong>系统状态:</strong> <span style="color: #4CAF50;">运行中</span></div>
-                         ${data.__topologyDone ? '<div style="grid-column:1 / span 2; color:#4CAF50; font-weight:600;">✅ 所有关系已确认完成</div>' : ''}
-                     </div>
-                 `;
-             }
-         }
+        function updateSystemInfo(data) {
+            console.log('更新系统信息:', data);
+            
+            if (!data) {
+                console.error('系统信息数据为空');
+                return;
+            }
+            
+            if (data.success === false) {
+                console.error('系统信息API返回失败:', data.error);
+                return;
+            }
+            
+            const totalPowerOns = data.total_power_on_operations ?? 0;
+            const container = document.getElementById('systemInfo');
+            
+            if (container) {
+                container.innerHTML = `
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div><strong>总点位:</strong> ${(data.total_points || 0).toLocaleString()}</div>
+                        <div><strong>继电器切换时间:</strong> ${((data.relay_switch_time || 0) * 1000).toFixed(1)}ms</div>
+                        <div><strong>当前已确认的点位关系数:</strong> ${data.confirmed_points_count || 0}</div>
+                        <div><strong>检测到的导通关系:</strong> ${data.detected_conductive_count || 0}</div>
+                        <div><strong>总测试次数:</strong> ${data.total_tests || 0}</div>
+                        <div><strong>继电器操作总次数:</strong> ${data.total_relay_operations || 0}</div>
+                        <div><strong>通电次数总和:</strong> ${totalPowerOns}</div>
+                        <div><strong>系统状态:</strong> <span style="color: #4CAF50;">运行中</span></div>
+                        ${data.__topologyDone ? '<div style="grid-column:1 / span 2; color:#4CAF50; font-weight:600;">✅ 所有关系已确认完成</div>' : ''}
+                    </div>
+                `;
+                console.log('系统信息更新完成');
+            } else {
+                console.error('找不到系统信息容器');
+            }
+        }
         
                  // 更新点对关系信息
-         function updateClusterInfo(clusters) {
-             const container = document.getElementById('clusterInfo');
-             if (!clusters || clusters.length === 0) {
-                 container.innerHTML = '<p style="color: #666;">暂无点对关系信息</p>';
-                 return;
-             }
-             
-             container.innerHTML = clusters.map(cluster => `
-                 <div style="background: #f0f8ff; padding: 10px; margin-bottom: 10px; border-radius: 5px;" title="${cluster.cluster_id || ''}">
-                     <strong>${getShortClusterName(cluster.cluster_id)}</strong> | 
-                     <strong>点位:</strong> [${cluster.points.join(', ')}] | 
-                     <strong>点位数量:</strong> ${cluster.point_count} | 
-                     <strong>状态:</strong> <span style="color: #4CAF50;">已确认</span>
-                 </div>
-             `).join('');
-         }
+        function updateClusterInfo(clusters) {
+            console.log('更新集群信息:', clusters);
+            
+            const container = document.getElementById('clusterInfo');
+            if (!container) {
+                console.error('找不到集群信息容器');
+                return;
+            }
+            
+            if (!clusters || clusters.length === 0) {
+                container.innerHTML = '<p style="color: #666;">暂无点对关系信息</p>';
+                console.log('集群信息为空');
+                return;
+            }
+            
+            container.innerHTML = clusters.map(cluster => `
+                <div style="background: #f0f8ff; padding: 10px; margin-bottom: 10px; border-radius: 5px;" title="${cluster.cluster_id || ''}">
+                    <strong>${getShortClusterName(cluster.cluster_id)}</strong> | 
+                    <strong>点位:</strong> [${cluster.points.join(', ')}] | 
+                    <strong>点位数量:</strong> ${cluster.point_count} | 
+                    <strong>状态:</strong> <span style="color: #4CAF50;">已确认</span>
+                </div>
+            `).join('');
+            console.log('集群信息更新完成');
+        }
         
                  // 更新点位状态
-         function updatePointStatus(pointStates) {
-             const container = document.getElementById('pointStatus');
-             const totalPoints = Object.keys(pointStates).length;
-             const onPoints = Object.values(pointStates).filter(state => state === 1).length;
-             const offPoints = totalPoints - onPoints;
-             
-                              // 获取连接组可视化数据
-             fetch('/api/clusters/visualization')
-                 .then(response => response.json())
-                 .then(data => {
-                     if (data.success) {
-                         const vizData = data.data;
-                         const clusterColors = vizData.cluster_colors;
-                         const unconfirmedPoints = vizData.unconfirmed_points;
-                         
-                         // 获取关系矩阵数据
-                         fetch('/api/relationships/matrix')
-                             .then(matrixResponse => matrixResponse.json())
-                             .then(matrixResult => {
-                                 if (matrixResult.success) {
-                                     const matrix = matrixResult.data.matrix;
-                                     
-                                     container.innerHTML = `
-                                         <div style="margin-bottom: 15px;">
-                                             <strong>总点位:</strong> ${totalPoints.toLocaleString()} | 
-                                             <span style="color: #4CAF50;"><strong>开启:</strong> ${onPoints}</span> | 
-                                             <span style="color: #f44336;"><strong>关闭:</strong> ${offPoints}</span>
-                                         </div>
-                                         <div style="margin-bottom: 15px;">
-                                             <strong>已确认连接组:</strong> ${vizData.confirmed_clusters.length}个 | 
-                                             <strong>已确认点位:</strong> ${vizData.total_confirmed_points}个 | 
-                                             <strong>未确认点位:</strong> ${vizData.total_unconfirmed_points}个
-                                         </div>
-                                         <div class="status-grid">
-                                             ${Object.entries(pointStates).slice(0, 100).map(([id, state]) => {
-                                                 // 根据关系矩阵确定点位颜色
-                                                 let backgroundColor = '#f44336'; // 默认关闭状态颜色
-                                                 let textColor = 'white';
-                                                 
-                                                 if (state === 1) {
-                                                     // 开启状态，检查该点位作为通电点位时是否有导通关系
-                                                     let hasConductiveRelation = false;
-                                                     for (let j = 0; j < matrix.length; j++) {
-                                                         if (j !== parseInt(id) && matrix[id][j] === 1) {
-                                                             hasConductiveRelation = true;
-                                                             backgroundColor = '#4CAF50'; // 绿色表示作为通电点位时有导通关系
-                                                             break;
-                                                         }
-                                                     }
-                                                     
-                                                     if (!hasConductiveRelation) {
-                                                         backgroundColor = '#9E9E9E'; // 灰色表示作为通电点位时无导通关系
-                                                     }
-                                                 }
-                                                 
-                                                 return `
-                                                     <div class="status-item" style="background-color: ${backgroundColor}; color: ${textColor}; cursor: pointer;" 
-                                                          title="点位 ${id} - 点击查看导通关系" 
-                                                          onclick="showPointRelationships(${id})">
-                                                         ${id}
-                                                     </div>
-                                                 `;
-                                             }).join('')}
-                                         </div>
-                                         ${totalPoints > 100 ? `<p style="text-align: center; color: #666; margin-top: 10px;">显示前100个点位，共${totalPoints}个</p>` : ''}
-                                         
-                                         <div style="margin-top: 20px; padding: 15px; background: #f5f5f5; border-radius: 5px;">
-                                             <h4 style="margin-top: 0;">点位状态颜色说明</h4>
-                                             <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-                                                 <div style="display: flex; align-items: center; gap: 5px;">
-                                                     <div style="width: 20px; height: 20px; background-color: #4CAF50; border-radius: 3px;"></div>
-                                                     <span>有导通能力: 点位已开启且作为通电点位时能导通其他点位</span>
-                                                 </div>
-                                                 <div style="display: flex; align-items: center; gap: 5px;">
-                                                     <div style="width: 20px; height: 20px; background-color: #9E9E9E; border-radius: 3px;"></div>
-                                                     <span>无导通能力: 点位已开启但作为通电点位时无法导通其他点位</span>
-                                                 </div>
-                                                 <div style="display: flex; align-items: center; gap: 5px;">
-                                                     <div style="width: 20px; height: 20px; background-color: #f44336; border-radius: 3px;"></div>
-                                                     <span>关闭状态: 点位未开启</span>
-                                                 </div>
-                                             </div>
-                                             <p style="margin-top: 10px; font-size: 12px; color: #666;">
-                                                 注意: 关系是非对称的，点位A能导通点位B不代表点位B能导通点位A
-                                             </p>
-                                         </div>
-                                     `;
-                                 } else {
-                                     // 如果获取矩阵失败，使用原来的显示方式
-                                     showOriginalPointStatus();
-                                 }
-                             })
-                             .catch(error => {
-                                 console.error('获取关系矩阵失败:', error);
-                                 showOriginalPointStatus();
-                             });
+        function updatePointStatus(pointStates) {
+            console.log('更新点位状态:', pointStates);
+            
+            const container = document.getElementById('pointStatus');
+            if (!container) {
+                console.error('找不到点位状态容器');
+                return;
+            }
+            
+            if (!pointStates || Object.keys(pointStates).length === 0) {
+                container.innerHTML = '<p style="color: #666;">暂无点位状态信息</p>';
+                console.log('点位状态为空');
+                return;
+            }
+            
+            const totalPoints = Object.keys(pointStates).length;
+            const onPoints = Object.values(pointStates).filter(state => state === 1).length;
+            const offPoints = totalPoints - onPoints;
+            
+            // 简化版本，先显示基本信息
+            container.innerHTML = `
+                <div style="margin-bottom: 15px;">
+                    <strong>总点位:</strong> ${totalPoints.toLocaleString()} | 
+                    <span style="color: #4CAF50;"><strong>开启:</strong> ${onPoints}</span> | 
+                    <span style="color: #f44336;"><strong>关闭:</strong> ${offPoints}</span>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <strong>状态详情:</strong> 已加载 ${totalPoints} 个点位的状态信息
+                </div>
+            `;
+            console.log('点位状态更新完成');
+        }
                      } else {
                          // 如果获取连接组信息失败，使用原来的显示方式
                          showOriginalPointStatus();
@@ -915,8 +1223,8 @@ HTML_TEMPLATE = """
              }
          }
         
-                 // 渲染测试历史（单页）
-         function renderHistoryItems(items) {
+        // 渲染测试历史（单页）
+        function renderHistoryItems(items) {
              if (items && items.length > 0) {
                  const historyHtml = items.map(test => {
                      const date = new Date(test.timestamp * 1000);
@@ -950,12 +1258,24 @@ HTML_TEMPLATE = """
          }
 
          // 兼容旧函数名（外部仍调用 updateTestHistory）
-         function updateTestHistory(data) {
-             renderHistoryItems(data);
-         }
+        function updateTestHistory(data) {
+            console.log('更新测试历史:', data);
+            
+            if (!data || !Array.isArray(data)) {
+                console.log('测试历史数据为空或格式错误');
+                const container = document.getElementById('testHistory');
+                if (container) {
+                    container.innerHTML = '<p style="color: #666;">暂无测试历史</p>';
+                }
+                return;
+            }
+            
+            renderHistoryItems(data);
+            console.log('测试历史更新完成');
+        }
 
-         // 加载指定页
-         async function loadHistoryPage(page, pageSize) {
+        // 加载指定页
+        async function loadHistoryPage(page, pageSize) {
              try {
                  const resp = await fetch(`/api/test/history?page=${page}&page_size=${pageSize}`);
                  const json = await resp.json();
@@ -1092,8 +1412,8 @@ HTML_TEMPLATE = """
             }
         }
         
-                 // 运行随机实验
-         async function runRandomExperiment() {
+        // 运行随机实验
+        async function runRandomExperiment() {
              try {
                  const powerSource = Math.floor(Math.random() * 100);
                  const testPoints = Array.from({length: Math.floor(Math.random() * 20) + 1}, () => Math.floor(Math.random() * 100));
@@ -1143,8 +1463,8 @@ HTML_TEMPLATE = """
             console.log(`总点位更新为${totalPts}，自动调整导通分布：1个(${conductivity1}), 2个(${conductivity2}), 3个(${conductivity3}), 4个(${conductivity4})`);
         }
         
-        // 重置系统
-         async function resetSystem() {
+                // 重置系统
+        async function resetSystem() {
              if (!confirm('确定要重置系统吗？这将清除所有测试历史并重新生成随机连接关系。')) {
                  return;
              }
@@ -1200,13 +1520,9 @@ HTML_TEMPLATE = """
                  alert('请求失败: ' + error.message);
              }
          }
-         
-
-
-
-
-         // 显示详细点对信息
-         async function showDetailedClusters() {
+        
+        // 显示详细点对信息
+        async function showDetailedClusters() {
              try {
                  const response = await fetch('/api/clusters/detailed');
                  const result = await response.json();
@@ -1256,9 +1572,9 @@ HTML_TEMPLATE = """
                  alert('请求失败: ' + error.message);
              }
          }
-         
-                              // 显示未确认连接组关系
-         async function showUnconfirmedRelationships() {
+        
+        // 显示未确认连接组关系
+        async function showUnconfirmedRelationships() {
              try {
                  const response = await fetch('/api/clusters/unconfirmed_relationships');
                  const result = await response.json();
@@ -1382,10 +1698,10 @@ HTML_TEMPLATE = """
                  alert('请求失败: ' + error.message);
                  console.error('Error:', error);
              }
-         }
+        }
 
-         // 显示已确认不导通关系
-         async function showConfirmedNonConductive() {
+        // 显示已确认不导通关系
+        async function showConfirmedNonConductive() {
              try {
                  const response = await fetch('/api/relationships/confirmed_non_conductive');
                  const result = await response.json();
@@ -1429,10 +1745,10 @@ HTML_TEMPLATE = """
              } catch (error) {
                  alert('请求失败: ' + error.message);
              }
-         }
+        }
 
-         // 显示指定点位的导通关系
-         async function showPointRelationships(pointId) {
+        // 显示指定点位的导通关系
+        async function showPointRelationships(pointId) {
              try {
                  const response = await fetch(`/api/relationships/point/${pointId}`);
                  const result = await response.json();
@@ -1892,6 +2208,11 @@ def get_system_info():
     """获取系统信息"""
     return jsonify(server.get_system_info())
 
+@app.route('/api/test/progress')
+def get_test_progress():
+    """获取实验进度数据"""
+    return jsonify(server.get_test_progress())
+
 # ============== 新增：点-点关系API ==============
 @app.route('/api/relationships/summary')
 def get_relationship_summary():
@@ -2146,6 +2467,7 @@ if __name__ == '__main__':
     print("🚀 启动线缆测试系统Web服务器...")
     print("📱 前端界面: http://localhost:5000")
     print("🔌 API接口: http://localhost:5000/api/")
-    print("📡 WebSocket: ws://localhost:5000/socket.io/")
+    # print("📡 WebSocket: ws://localhost:5000/socket.io/")  # 暂时禁用WebSocket
     
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+    # socketio.run(app, host='0.0.0.0', port=5000, debug=True)  # 暂时禁用WebSocket
+    app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False)  # 使用简单Flask服务器

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>简单测试</title>
+</head>
+<body>
+    <h1>简单测试</h1>
+    <div id="test">测试中...</div>
+    
+    <script>
+        console.log('JavaScript开始执行');
+        
+        // 测试基本功能
+        document.getElementById('test').innerHTML = 'JavaScript正常工作';
+        
+        // 测试API调用
+        fetch('/api/system/info')
+            .then(response => response.json())
+            .then(data => {
+                console.log('API调用成功:', data);
+                document.getElementById('test').innerHTML = 'API调用成功: ' + JSON.stringify(data);
+            })
+            .catch(error => {
+                console.error('API调用失败:', error);
+                document.getElementById('test').innerHTML = 'API调用失败: ' + error.message;
+            });
+    </script>
+</body>
+</html>
