@@ -52,8 +52,8 @@ TEST_EXECUTION_CONFIG = {
     'phase_switch_criteria': {
         # 基于未知关系比例的阶段切换策略
         'phase_thresholds': {
-            'phase_1': {'min_unknown_ratio': 0.95, 'max_unknown_ratio': 1.0, 'group_ratio': 0.30},  # 30%集群策略：100%>未知关系>50%
-            'phase_2': {'min_unknown_ratio': 0.20, 'max_unknown_ratio': 0.95, 'group_ratio': 0.20},  # 20%集群策略：50%>未知关系>20%
+            'phase_1': {'min_unknown_ratio': 0.6, 'max_unknown_ratio': 1.0, 'group_ratio': 0.30},  # 30%集群策略：100%>未知关系>50%
+            'phase_2': {'min_unknown_ratio': 0.20, 'max_unknown_ratio': 0.6, 'group_ratio': 0.20},  # 20%集群策略：50%>未知关系>20%
             'phase_3': {'min_unknown_ratio': 0.10, 'max_unknown_ratio': 0.20, 'group_ratio': 0.10},  # 10%集群策略：20%>未知关系>10%
             'binary_search': {'min_unknown_ratio': 0.0, 'max_unknown_ratio': 0.10, 'group_ratio': 0.0},  # 二分法策略：10%>未知关系
         },
