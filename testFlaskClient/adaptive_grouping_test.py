@@ -61,7 +61,7 @@ class AdaptiveGroupingTester:
         print(f"🚀 初始化自适应分组测试器")
         print(f"总点位: {self.total_points}")
         print(f"分组比例: {self.group_ratios}")
-        print(f"当前阶段: {self.current_phase + 1} ({self.group_ratios[self.current_phase]:.1%})")
+        print(f"当前阶段: {self.current_phase + 1} ({self.get_current_group_ratio():.1%})")
     
     def initialize_relationship_matrix(self):
         """初始化关系矩阵"""
@@ -91,7 +91,7 @@ class AdaptiveGroupingTester:
     
     def get_current_group_size(self) -> int:
         """获取当前阶段的分组大小"""
-        ratio = self.group_ratios[self.current_phase]
+        ratio = self.get_current_group_ratio()
         group_size = max(
             self.config['adaptive_grouping']['min_group_size'],
             min(
@@ -527,7 +527,7 @@ class AdaptiveGroupingTester:
     
     def get_current_phase_name(self, unknown_ratio: float) -> str:
         """根据当前分组比例确定当前阶段名称"""
-        current_ratio = self.group_ratios[self.current_phase]
+        current_ratio = self.get_current_group_ratio()
         phase_thresholds = self.config['test_execution']['phase_switch_criteria']['phase_thresholds']
         
         for phase_name, threshold in phase_thresholds.items():
@@ -579,7 +579,7 @@ class AdaptiveGroupingTester:
         
         # 切换到目标阶段
         self.current_phase = target_phase_index
-        new_ratio = self.group_ratios[self.current_phase]
+        new_ratio = self.get_current_group_ratio()
         
         print(f"🔄 切换到测试阶段: {target_phase_name}")
         print(f"新的分组比例: {new_ratio:.1%}")
@@ -588,12 +588,36 @@ class AdaptiveGroupingTester:
         
         return True
     
+    def get_current_group_ratio(self) -> float:
+        """获取当前阶段的分组比例 - 基于未知关系比例动态计算"""
+        # 计算当前未知关系比例
+        total_possible_relations = self.total_points * (self.total_points - 1)
+        unknown_ratio = len(self.unknown_relations) / total_possible_relations
+        
+        # 获取目标阶段配置
+        target_phase_name = self.get_target_phase_name(unknown_ratio)
+        phase_thresholds = self.config['test_execution']['phase_switch_criteria']['phase_thresholds']
+        
+        # 如果是二分法阶段，返回0（不使用集群）
+        if target_phase_name == 'binary_search' or target_phase_name not in phase_thresholds:
+            return 0.0
+        
+        # 返回目标阶段的分组比例
+        target_ratio = phase_thresholds[target_phase_name]['group_ratio']
+        
+        print(f"🔍 动态分组比例计算:")
+        print(f"  未知关系比例: {unknown_ratio:.1%}")
+        print(f"  目标阶段: {target_phase_name}")
+        print(f"  分组比例: {target_ratio:.1%}")
+        
+        return target_ratio
+    
     def create_point_clusters(self) -> List[List[int]]:
         """创建点位集群 - 按比例切割为不相交的集群，使用随机分组策略"""
         print(f"🔍 创建点位集群（随机分组策略）...")
         
-        # 获取当前阶段的分组比例
-        current_ratio = self.group_ratios[self.current_phase]
+        # 获取当前阶段的分组比例 - 使用动态计算而不是固定数组
+        current_ratio = self.get_current_group_ratio()
         cluster_size = int(self.total_points * current_ratio)
         
         print(f"当前阶段: {self.current_phase + 1}")
@@ -942,7 +966,7 @@ class AdaptiveGroupingTester:
         
         print(f"\n🚀 开始运行阶段 {self.current_phase} 测试")
         print(f"目标测试次数: {max_tests}")
-        print(f"当前分组比例: {self.group_ratios[self.current_phase]:.1%}")
+        print(f"当前分组比例: {self.get_current_group_ratio():.1%}")
         
         tests_run = 0
         phase_start_time = time.time()
@@ -1342,7 +1366,7 @@ class AdaptiveGroupingTester:
                     
                     print(f"\n📊 当前状态:")
                     print(f"总测试次数: {server_total_tests}")
-                    print(f"当前阶段: {self.current_phase + 1} ({self.group_ratios[self.current_phase]:.1%})")
+                    print(f"当前阶段: {self.current_phase + 1} ({self.get_current_group_ratio():.1%})")
                     print(f"阶段测试次数: {self.phase_test_counts[self.current_phase]}")
                     print(f"已知关系: {server_confirmed_count} ({confirmed_ratio:.1%})")
                     print(f"  - 导通关系: {server_conductive_count}")
@@ -1360,7 +1384,7 @@ class AdaptiveGroupingTester:
         
         print(f"\n📊 当前状态 (本地备用数据):")
         print(f"总测试次数: {self.total_tests}")
-        print(f"当前阶段: {self.current_phase + 1} ({self.group_ratios[self.current_phase]:.1%})")
+        print(f"当前阶段: {self.current_phase + 1} ({self.get_current_group_ratio():.1%})")
         print(f"阶段测试次数: {self.phase_test_counts[self.current_phase]}")
         print(f"已知关系: {len(self.known_relations)} ({known_ratio:.1%})")
         print(f"未知关系: {len(self.unknown_relations)} ({unknown_ratio:.1%})")
