@@ -25,8 +25,8 @@ class AdaptiveGroupingTester:
         
         # 关系矩阵状态
         self.relationship_matrix = [[None] * self.total_points for _ in range(self.total_points)]
-        self.known_relations = set()  # 已知关系集合
-        self.unknown_relations = set()  # 未知关系集合
+        self.known_relations = set()  # 已知关系集合（本地备用）
+        self.unknown_relations = set()  # 未知关系集合（本地备用）
         
         # 测试状态
         self.current_phase = 0  # 当前测试阶段
@@ -148,6 +148,9 @@ class AdaptiveGroupingTester:
         if group_size <= 0:
             return [], -1
         
+        # 🔧 重要：从服务端获取关系矩阵，确保数据一致性
+        server_matrix = self.get_server_relationship_matrix()
+        
         # 获取所有可用的点位
         available_points = list(range(self.total_points))
         
@@ -156,10 +159,10 @@ class AdaptiveGroupingTester:
         known_points = []
         
         for point in available_points:
-            # 计算该点位的关系未知数量
+            # 基于服务端矩阵计算该点位的关系未知数量
             unknown_count = 0
             for other_point in range(self.total_points):
-                if point != other_point and (point, other_point) in self.unknown_relations:
+                if point != other_point and server_matrix[point][other_point] == 0:  # 0表示未知关系
                     unknown_count += 1
             
             if unknown_count > 0:
@@ -198,12 +201,12 @@ class AdaptiveGroupingTester:
             # 从已知关系点位中补充，优先选择关系较少的点位
             remaining_needed = group_size - len(selected_points)
             
-            # 计算每个已知关系点位的已知关系数量
+            # 基于服务端矩阵计算每个已知关系点位的已知关系数量
             known_point_scores = []
             for point in known_points:
                 known_count = 0
                 for other_point in range(self.total_points):
-                    if point != other_point and (point, other_point) in self.known_relations:
+                    if point != other_point and server_matrix[point][other_point] != 0:  # 非0表示已知关系（1或-1）
                         known_count += 1
                 known_point_scores.append((point, known_count))
             
@@ -221,12 +224,12 @@ class AdaptiveGroupingTester:
             # 如果完全没有未知关系点位，从已知关系点位中选择
             print(f"⚠️  所有点位关系都已确认，从已知关系点位中选择")
             
-            # 计算每个点位的已知关系数量，优先选择关系较少的点位
+            # 基于服务端矩阵计算每个点位的已知关系数量，优先选择关系较少的点位
             point_scores = []
             for point in available_points:
                 known_count = 0
                 for other_point in range(self.total_points):
-                    if point != other_point and (point, other_point) in self.known_relations:
+                    if point != other_point and server_matrix[point][other_point] != 0:  # 非0表示已知关系（1或-1）
                         known_count += 1
                 point_scores.append((point, known_count))
             
@@ -534,8 +537,8 @@ class AdaptiveGroupingTester:
         return True
     
     def create_point_clusters(self) -> List[List[int]]:
-        """创建点位集群 - 按比例切割为不相交的集群"""
-        print(f"🔍 创建点位集群...")
+        """创建点位集群 - 按比例切割为不相交的集群，使用随机分组策略"""
+        print(f"🔍 创建点位集群（随机分组策略）...")
         
         # 获取当前阶段的分组比例
         current_ratio = self.group_ratios[self.current_phase]
@@ -545,76 +548,215 @@ class AdaptiveGroupingTester:
         print(f"分组比例: {current_ratio:.1%}")
         print(f"集群大小: {cluster_size}")
         
-        # 获取所有点位
-        all_points = list(range(self.total_points))
+        # 🔧 重要：实现随机分组策略，避免前后两次分组过于接近
+        clusters = self.create_random_clusters_with_unknown_priority(cluster_size)
         
-        # 优先选择关系未知的点位
-        unknown_points = []
-        known_points = []
-        
-        for point in all_points:
-            # 计算该点位的关系未知数量
-            unknown_count = 0
-            for other_point in range(self.total_points):
-                if point != other_point and (point, other_point) in self.unknown_relations:
-                    unknown_count += 1
-            
-            if unknown_count > 0:
-                unknown_points.append((point, unknown_count))
-            else:
-                known_points.append(point)
-        
-        # 按未知关系数量排序，优先选择未知关系多的点位
-        unknown_points.sort(key=lambda x: x[1], reverse=True)
-        
-        print(f"点位分析:")
-        print(f"  关系未知的点位: {len(unknown_points)} 个")
-        print(f"  关系已知的点位: {len(known_points)} 个")
-        
-        # 创建集群
-        clusters = []
-        used_points = set()
-        
-        # 优先创建包含未知关系的集群
-        while len(unknown_points) >= cluster_size:
-            # 选择未知关系最多的点位组成集群
-            cluster = []
-            for i in range(cluster_size):
-                point, _ = unknown_points[i]
-                cluster.append(point)
-                used_points.add(point)
-            
-            clusters.append(cluster)
-            print(f"✅ 创建集群 {len(clusters)}: {cluster} (未知关系优先)")
-            
-            # 移除已使用的点位
-            unknown_points = unknown_points[cluster_size:]
-        
-        # 如果还有剩余的点位，创建最后一个集群
-        remaining_points = []
-        for point, _ in unknown_points:
-            remaining_points.append(point)
-        
-        # 从已知关系点位中补充
-        for point in known_points:
-            if point not in used_points:
-                remaining_points.append(point)
-                if len(remaining_points) >= cluster_size:
-                    break
-        
-        if remaining_points:
-            # 确保集群大小一致
-            if len(remaining_points) > cluster_size:
-                remaining_points = remaining_points[:cluster_size]
-            
-            clusters.append(remaining_points)
-            print(f"✅ 创建集群 {len(clusters)}: {remaining_points} (补充集群)")
+        # 记录分组历史，避免重复
+        self.record_cluster_history(clusters)
         
         print(f"集群创建完成，共 {len(clusters)} 个集群")
         for i, cluster in enumerate(clusters):
             print(f"  集群 {i+1}: {cluster} (大小: {len(cluster)})")
         
         return clusters
+    
+    def create_random_clusters_with_unknown_priority(self, cluster_size: int) -> List[List[int]]:
+        """创建随机集群，优先考虑未知关系但增加随机性"""
+        print(f"🎲 使用随机分组策略创建集群...")
+        
+        # 获取所有点位
+        all_points = list(range(self.total_points))
+        
+        # 分析点位的未知关系数量
+        point_unknown_counts = []
+        for point in all_points:
+            unknown_count = 0
+            for other_point in range(self.total_points):
+                if point != other_point and (point, other_point) in self.unknown_relations:
+                    unknown_count += 1
+            point_unknown_counts.append((point, unknown_count))
+        
+        print(f"点位分析:")
+        print(f"  总点位数: {len(all_points)}")
+        print(f"  集群大小: {cluster_size}")
+        
+        # 🔧 重要：随机分组策略
+        # 1. 将点位按未知关系数量分为三个层级
+        high_unknown = []  # 高未知关系（>70%）
+        medium_unknown = []  # 中等未知关系（30%-70%）
+        low_unknown = []  # 低未知关系（<30%）
+        
+        max_possible_unknown = self.total_points - 1
+        
+        for point, unknown_count in point_unknown_counts:
+            unknown_ratio = unknown_count / max_possible_unknown if max_possible_unknown > 0 else 0
+            
+            if unknown_ratio > 0.7:
+                high_unknown.append(point)
+            elif unknown_ratio > 0.3:
+                medium_unknown.append(point)
+            else:
+                low_unknown.append(point)
+        
+        print(f"  高未知关系点位: {len(high_unknown)} 个")
+        print(f"  中等未知关系点位: {len(medium_unknown)} 个") 
+        print(f"  低未知关系点位: {len(low_unknown)} 个")
+        
+        # 2. 随机打乱各个层级的点位顺序
+        random.shuffle(high_unknown)
+        random.shuffle(medium_unknown)
+        random.shuffle(low_unknown)
+        
+        # 3. 检查是否与历史分组过于相似
+        max_attempts = 5
+        for attempt in range(max_attempts):
+            # 创建候选集群
+            candidate_clusters = self.generate_random_clusters(
+                high_unknown, medium_unknown, low_unknown, cluster_size
+            )
+            
+            # 检查与历史分组的相似度
+            similarity = self.calculate_cluster_similarity(candidate_clusters)
+            print(f"  尝试 {attempt + 1}: 与历史分组相似度 {similarity:.2%}")
+            
+            # 如果相似度低于阈值，接受这个分组
+            if similarity < 0.6:  # 相似度低于60%
+                print(f"✅ 分组相似度合适，采用此分组")
+                return candidate_clusters
+            
+            # 如果相似度过高，重新打乱并尝试
+            print(f"⚠️  分组相似度过高 ({similarity:.2%})，重新随机化...")
+            random.shuffle(high_unknown)
+            random.shuffle(medium_unknown)
+            random.shuffle(low_unknown)
+        
+        # 如果多次尝试仍然相似度过高，强制使用最后一次的结果
+        print(f"⚠️  经过 {max_attempts} 次尝试，强制使用当前分组")
+        return candidate_clusters
+    
+    def generate_random_clusters(self, high_unknown: List[int], medium_unknown: List[int], 
+                                low_unknown: List[int], cluster_size: int) -> List[List[int]]:
+        """生成随机集群"""
+        clusters = []
+        available_points = high_unknown + medium_unknown + low_unknown
+        used_points = set()
+        
+        # 随机打乱所有可用点位
+        random.shuffle(available_points)
+        
+        # 创建集群，每个集群尽量包含不同层级的点位
+        while len(available_points) - len(used_points) >= cluster_size:
+            cluster = []
+            
+            # 🔧 重要：随机选择策略
+            # 60%概率优先选择高未知关系点位，40%概率完全随机
+            use_priority = random.random() < 0.6
+            
+            if use_priority:
+                # 优先策略：先选择高未知关系点位
+                remaining_high = [p for p in high_unknown if p not in used_points]
+                remaining_medium = [p for p in medium_unknown if p not in used_points]
+                remaining_low = [p for p in low_unknown if p not in used_points]
+                
+                # 按比例选择：60%高，30%中，10%低
+                high_count = min(int(cluster_size * 0.6), len(remaining_high))
+                medium_count = min(int(cluster_size * 0.3), len(remaining_medium))
+                low_count = min(cluster_size - high_count - medium_count, len(remaining_low))
+                
+                # 随机选择各层级的点位
+                if high_count > 0:
+                    cluster.extend(random.sample(remaining_high, high_count))
+                if medium_count > 0:
+                    cluster.extend(random.sample(remaining_medium, medium_count))
+                if low_count > 0:
+                    cluster.extend(random.sample(remaining_low, low_count))
+                
+                # 如果集群还不够大，从剩余点位中随机补充
+                while len(cluster) < cluster_size:
+                    remaining = [p for p in available_points if p not in used_points and p not in cluster]
+                    if not remaining:
+                        break
+                    cluster.append(random.choice(remaining))
+                        
+            else:
+                # 完全随机策略
+                remaining_points = [p for p in available_points if p not in used_points]
+                cluster_points = random.sample(remaining_points, min(cluster_size, len(remaining_points)))
+                cluster.extend(cluster_points)
+            
+            # 添加到已使用点位集合
+            for point in cluster:
+                used_points.add(point)
+            
+            clusters.append(sorted(cluster))  # 排序以便比较
+            print(f"  生成集群 {len(clusters)}: {cluster} ({'优先' if use_priority else '随机'}策略)")
+        
+        # 处理剩余点位
+        remaining_points = [p for p in available_points if p not in used_points]
+        if remaining_points:
+            if len(remaining_points) >= cluster_size // 2:  # 如果剩余点位够多，创建新集群
+                clusters.append(sorted(remaining_points))
+                print(f"  生成剩余集群: {remaining_points}")
+            else:
+                # 如果剩余点位较少，随机分配到现有集群中
+                for point in remaining_points:
+                    target_cluster = random.choice(clusters)
+                    target_cluster.append(point)
+                    target_cluster.sort()
+                print(f"  剩余点位 {remaining_points} 已分配到现有集群")
+        
+        return clusters
+    
+    def calculate_cluster_similarity(self, candidate_clusters: List[List[int]]) -> float:
+        """计算候选集群与历史分组的相似度"""
+        if not self.group_history:
+            return 0.0  # 没有历史记录，相似度为0
+        
+        max_similarity = 0.0
+        
+        # 与最近的几次分组比较
+        recent_history = self.group_history[-3:]  # 最近3次分组
+        
+        for historical_clusters in recent_history:
+            similarity = self.compare_cluster_sets(candidate_clusters, historical_clusters)
+            max_similarity = max(max_similarity, similarity)
+        
+        return max_similarity
+    
+    def compare_cluster_sets(self, clusters1: List[List[int]], clusters2: List[List[int]]) -> float:
+        """比较两个集群集合的相似度"""
+        if not clusters1 or not clusters2:
+            return 0.0
+        
+        total_similarity = 0.0
+        comparisons = 0
+        
+        # 比较每个集群与另一个集群集合中最相似的集群
+        for cluster1 in clusters1:
+            max_cluster_similarity = 0.0
+            for cluster2 in clusters2:
+                # 计算两个集群的交集比例
+                intersection = len(set(cluster1) & set(cluster2))
+                union = len(set(cluster1) | set(cluster2))
+                cluster_similarity = intersection / union if union > 0 else 0.0
+                max_cluster_similarity = max(max_cluster_similarity, cluster_similarity)
+            
+            total_similarity += max_cluster_similarity
+            comparisons += 1
+        
+        return total_similarity / comparisons if comparisons > 0 else 0.0
+    
+    def record_cluster_history(self, clusters: List[List[int]]):
+        """记录集群历史"""
+        # 深拷贝集群列表
+        clusters_copy = [cluster.copy() for cluster in clusters]
+        self.group_history.append(clusters_copy)
+        
+        # 只保留最近的10次分组历史
+        if len(self.group_history) > 10:
+            self.group_history = self.group_history[-10:]
+        
+        print(f"📝 已记录分组历史，当前历史记录数: {len(self.group_history)}")
     
     def test_cluster_internally(self, cluster: List[int], cluster_id: int) -> int:
         """在集群内部进行测试 - 每个点位轮流作为通电点位"""
@@ -1096,13 +1238,75 @@ class AdaptiveGroupingTester:
                 count += 1
         return count
     
+    def get_server_relationship_matrix(self) -> List[List[int]]:
+        """从服务端获取关系矩阵"""
+        try:
+            response = requests.get(f"{self.base_url}/api/relationships/matrix")
+            if response.status_code == 200:
+                result = response.json()
+                if result.get('success') and 'data' in result:
+                    return result['data']['matrix']
+        except Exception as e:
+            print(f"⚠️  获取服务端关系矩阵失败: {e}")
+        
+        # 如果获取失败，返回本地矩阵
+        return self.relationship_matrix
+    
+    def get_server_unknown_relations(self) -> Set[Tuple[int, int]]:
+        """从服务端关系矩阵计算未知关系"""
+        try:
+            matrix = self.get_server_relationship_matrix()
+            unknown_relations = set()
+            
+            for i in range(self.total_points):
+                for j in range(self.total_points):
+                    if i != j and matrix[i][j] == 0:  # 0表示未知关系
+                        unknown_relations.add((i, j))
+            
+            return unknown_relations
+        except Exception as e:
+            print(f"⚠️  计算服务端未知关系失败: {e}")
+            return self.unknown_relations
+    
     def print_current_status(self):
         """打印当前状态"""
+        # 🔧 重要：从服务端获取真实的关系统计数据，避免客户端和服务端数据不一致
+        try:
+            response = requests.get(f"{self.base_url}/api/system/info")
+            if response.status_code == 200:
+                system_info = response.json()
+                if system_info.get('success'):
+                    server_confirmed_count = system_info.get('confirmed_points_count', 0)
+                    server_conductive_count = system_info.get('detected_conductive_count', 0)
+                    server_non_conductive_count = system_info.get('confirmed_non_conductive_count', 0)
+                    server_total_tests = system_info.get('total_tests', 0)
+                    server_relay_operations = system_info.get('total_relay_operations', 0)
+                    
+                    # 计算总的可能关系数（N*(N-1)，排除自己到自己）
+                    total_possible_relations = self.total_points * (self.total_points - 1)
+                    confirmed_ratio = server_confirmed_count / max(1, total_possible_relations)
+                    unknown_count = total_possible_relations - server_confirmed_count
+                    unknown_ratio = unknown_count / max(1, total_possible_relations)
+                    
+                    print(f"\n📊 当前状态:")
+                    print(f"总测试次数: {server_total_tests}")
+                    print(f"当前阶段: {self.current_phase + 1} ({self.group_ratios[self.current_phase]:.1%})")
+                    print(f"阶段测试次数: {self.phase_test_counts[self.current_phase]}")
+                    print(f"已知关系: {server_confirmed_count} ({confirmed_ratio:.1%})")
+                    print(f"  - 导通关系: {server_conductive_count}")
+                    print(f"  - 不导通关系: {server_non_conductive_count}")
+                    print(f"未知关系: {unknown_count} ({unknown_ratio:.1%})")
+                    print(f"继电器操作总数: {server_relay_operations}")
+                    return
+        except Exception as e:
+            print(f"⚠️  获取服务器状态失败: {e}")
+        
+        # 如果服务器获取失败，使用本地数据作为备用
         total_possible_relations = self.total_points * (self.total_points - 1)
         known_ratio = len(self.known_relations) / total_possible_relations
         unknown_ratio = len(self.unknown_relations) / total_possible_relations
         
-        print(f"\n📊 当前状态:")
+        print(f"\n📊 当前状态 (本地备用数据):")
         print(f"总测试次数: {self.total_tests}")
         print(f"当前阶段: {self.current_phase + 1} ({self.group_ratios[self.current_phase]:.1%})")
         print(f"阶段测试次数: {self.phase_test_counts[self.current_phase]}")

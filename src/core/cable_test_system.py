@@ -122,6 +122,44 @@ class CableTestSystem:
             self.test_points[i] = TestPoint(point_id=i)
         logger.info(f"已初始化 {self.total_points} 个测试点位")
     
+    def _calculate_conductivity_distribution(self, total_points: int) -> Dict[int, int]:
+        """
+        根据总点位数动态计算导通分布
+        
+        Args:
+            total_points: 总点位数
+            
+        Returns:
+            Dict[int, int]: 导通分布字典 {导通数量: 点位数量}
+        """
+        # 🔧 新的比例设置：1个(90%), 2个(6%), 3个(3%), 4个(1%)
+        percentages = {
+            1: 0.90,  # 90%
+            2: 0.06,  # 6%
+            3: 0.03,  # 3%
+            4: 0.01   # 1%
+        }
+        
+        # 根据比例计算实际数量
+        distribution = {}
+        total_assigned = 0
+        
+        # 先按比例分配，除了最大的那个
+        for conductivity_count in [4, 3, 2]:  # 从小到大分配
+            count = round(total_points * percentages[conductivity_count])
+            distribution[conductivity_count] = count
+            total_assigned += count
+        
+        # 剩余的全部分配给1个导通的点位
+        distribution[1] = total_points - total_assigned
+        
+        logger.info(f"动态计算的导通分布 (总点位={total_points}):")
+        for conductivity_count in sorted(distribution.keys()):
+            actual_percentage = (distribution[conductivity_count] / total_points) * 100
+            logger.info(f"  {conductivity_count}个导通: {distribution[conductivity_count]}个点位 ({actual_percentage:.1f}%)")
+        
+        return distribution
+    
     def _generate_random_connections(self):
         """生成随机连接关系"""
         logger.info("开始生成随机连接关系")
@@ -129,14 +167,9 @@ class CableTestSystem:
         # 清空现有连接
         self.true_pairs.clear()
         
-        # 新的精细化连接生成逻辑
-        # 设置不同导通数量的点位分布
-        conductivity_distribution = {
-            1: 50,  # 与1个点导通的点有50个
-            2: 30,  # 与2个点导通的点有30个
-            3: 20,  # 与3个点导通的点有20个
-            4: 0    # 与4个点导通的点有0个（因为50+30+20=100）
-        }
+        # 🔧 重要修改：根据总点位数动态计算导通分布比例
+        # 新的比例：1个(90%), 2个(6%), 3个(3%), 4个(1%)
+        conductivity_distribution = self._calculate_conductivity_distribution(self.total_points)
         
         # 验证总数是否匹配
         total_points_from_distribution = sum(conductivity_distribution.values())
@@ -339,15 +372,18 @@ class CableTestSystem:
             has_conductive_relationship = len(detected_connections) > 0
             
             if has_conductive_relationship:
-                logger.info(f"多对多测试发现导通关系，但无法确定具体点位，保持关系矩阵为未知状态")
-                # 不更新关系矩阵，保持为0（未知）
+                logger.info(f"多对多测试发现导通关系，但无法确定具体导通点位，不更新导通关系")
+                # 🔧 重要修复：1对多测试中即使检测到导通，也无法确定具体是哪个点位导通
+                # 因此不能确认任何具体的导通关系，所有点位关系保持未知状态(0)
+                logger.info(f"多对多测试检测到导通，但无法确定具体导通的点位，所有关系保持未知状态")
+                # 不更新任何点位的关系矩阵，保持所有测试点位为未知(0)
             else:
-                logger.info(f"多对多测试未发现导通关系，将所有测试点位标记为不导通")
-                # 当没有检测到导通关系时，将所有测试点位标记为不导通
+                logger.info(f"多对多测试未发现导通关系，可以确认所有测试点位都不导通")
+                # 🔧 正确逻辑：当完全没有检测到导通关系时，可以确认所有测试点位都不导通
                 for test_point in active_points:
                     if test_point != power_source:  # 排除电源点位
                         self.relationship_matrix[power_source][test_point] = -1
-                        logger.info(f"多对多测试标记不导通：E[{power_source},{test_point}] = -1")
+                        logger.info(f"多对多测试确认不导通：E[{power_source},{test_point}] = -1")
                 
         else:  # 1对1测试（1个电源点位 + 1个测试点位）
             test_point = active_points[1] if len(active_points) > 1 else None
@@ -400,11 +436,35 @@ class CableTestSystem:
         print(f"  测试点位激活操作: {test_points_ops} 次")
         relay_operations += test_points_ops
         
-        # 🔧 重要：如果测试点位激活操作返回0，说明继电器状态完全相同
-        # 这种情况下，总继电器操作次数也应该为0（即使电源点位切换了）
-        if test_points_ops == 0:
-            print(f"🔌 继电器状态完全相同，总操作次数设为0")
+        # 🔧 重要：修复继电器操作次数计算逻辑
+        # 不能简单地因为测试点位激活操作为0就将总操作次数设为0
+        # 需要考虑电源点位切换和测试点位激活的总体效果
+        
+        # 获取当前完整的继电器状态（电源点位 + 测试点位）
+        current_full_state = {power_source} | set(test_points)
+        last_full_state = getattr(self.relay_manager, 'last_full_relay_states', set())
+        
+        print(f"🔌 继电器状态完整分析:")
+        print(f"  上一次完整状态: {sorted(last_full_state)} (共{len(last_full_state)}个)")
+        print(f"  本次完整状态: {sorted(current_full_state)} (共{len(current_full_state)}个)")
+        
+        # 如果完整状态相同，操作次数为0
+        if current_full_state == last_full_state:
+            print(f"🔌 继电器完整状态相同，总操作次数设为0")
             relay_operations = 0
+        else:
+            # 计算实际需要的操作次数
+            to_close = last_full_state - current_full_state
+            to_open = current_full_state - last_full_state
+            actual_operations = len(to_close) + len(to_open)
+            
+            print(f"🔌 继电器状态变化详情:")
+            print(f"  需要关闭: {sorted(to_close)} (共{len(to_close)}个)")
+            print(f"  需要开启: {sorted(to_open)} (共{len(to_open)}个)")
+            print(f"  实际操作次数: {actual_operations}")
+            
+            # 使用实际计算的操作次数，而不是简单相加
+            relay_operations = actual_operations
         
         print(f"  总继电器操作次数: {relay_operations}")
         print(f"  继电器操作详情: 电源切换({power_source_ops}) + 测试点位激活({test_points_ops})")
@@ -439,9 +499,10 @@ class CableTestSystem:
             total_points=self.total_points
         )
         
-        # 兼容旧版本
+        # 兼容旧版本 - 只累加本次测试的操作次数，不重复累加管理器的累积值
         self.relay_operation_count += relay_operations
-        self.power_on_count += self.relay_manager.get_operation_stats()['power_on_count']
+        # 注意：不要重复累加 RelayStateManager 的累积计数器
+        # self.power_on_count 将在每次测试中固定为1（在TestResult中处理）
         
         self.test_history.append(test_result)
         
@@ -1342,19 +1403,71 @@ class CableTestSystem:
         return self._were_points_cotested_without_link(point1, point2)
 
     def get_confirmed_points_count(self) -> int:
-        """获取已确认的点位关系数量"""
+        """获取已确认的点位关系数量（与矩阵对比统计一致）"""
         if not self.relationship_matrix:
             return 0
         
-        confirmed_count = 0
-        for i in range(self.total_points):
-            for j in range(self.total_points):
-                if i != j:  # 排除对角线（点位与自身的关系）
+        # 🔧 重要修复：使用与get_relationship_matrices_comparison相同的逻辑
+        # 确保数据一致性
+        try:
+            comparison_data = self.get_relationship_matrices_comparison()
+            detected = comparison_data.get('comparison', {}).get('detected', {})
+            conductive_count = detected.get('conductive', 0)
+            non_conductive_count = detected.get('non_conductive', 0)
+            confirmed_count = conductive_count + non_conductive_count
+            
+            # 添加调试信息
+            print(f"🔍 get_confirmed_points_count 调试:")
+            print(f"  导通关系: {conductive_count}")
+            print(f"  不导通关系: {non_conductive_count}")
+            print(f"  已确认关系总数: {confirmed_count}")
+            
+            return confirmed_count
+        except Exception as e:
+            print(f"❌ get_confirmed_points_count 发生错误: {e}")
+            
+            # 降级到原始逻辑
+            confirmed_count = 0
+            for i in range(self.total_points):
+                for j in range(self.total_points):
+                    if i == j:  # 跳过对角线
+                        continue
+                        
                     if self.relationship_matrix[i][j] != 0:  # 0表示未知，1和-1表示已确认
                         confirmed_count += 1
-        
-        # 由于关系矩阵是对称的，实际的关系数量是总数的一半
-        return confirmed_count // 2
+            
+            print(f"🔄 降级计算结果: {confirmed_count}")
+            return confirmed_count
+    
+    def get_detected_conductive_count(self) -> int:
+        """获取检测到的导通关系数量（与矩阵对比统计一致）"""
+        try:
+            comparison_data = self.get_relationship_matrices_comparison()
+            detected = comparison_data.get('comparison', {}).get('detected', {})
+            conductive_count = detected.get('conductive', 0)
+            return conductive_count
+        except Exception as e:
+            print(f"❌ get_detected_conductive_count 发生错误: {e}")
+            # 降级到原始逻辑
+            detected_pairs = self._iter_detected_conductive_pairs()
+            return len(detected_pairs)
+    
+    def get_confirmed_non_conductive_count(self) -> int:
+        """获取确认的不导通关系数量（与矩阵对比统计一致）"""
+        try:
+            comparison_data = self.get_relationship_matrices_comparison()
+            detected = comparison_data.get('comparison', {}).get('detected', {})
+            non_conductive_count = detected.get('non_conductive', 0)
+            return non_conductive_count
+        except Exception as e:
+            print(f"❌ get_confirmed_non_conductive_count 发生错误: {e}")
+            # 降级到原始逻辑
+            confirmed_non_conductive_count = 0
+            for i in range(self.total_points):
+                for j in range(i + 1, self.total_points):
+                    if self._were_points_cotested_without_link(i, j):
+                        confirmed_non_conductive_count += 1
+            return confirmed_non_conductive_count
 
     def get_relay_operation_stats(self) -> Dict[str, Any]:
         """获取继电器操作统计信息"""

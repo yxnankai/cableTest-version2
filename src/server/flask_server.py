@@ -205,6 +205,8 @@ def index():
         total_power_on_ops = 0
     
     confirmed_points_count = server.test_system.get_confirmed_points_count()
+    detected_conductive_count = server.test_system.get_detected_conductive_count()
+    confirmed_non_conductive_count = server.test_system.get_confirmed_non_conductive_count()
     
     # 获取测试历史
     test_history = server.test_system.test_history[-10:] if server.test_system.test_history else []  # 最近10次测试
@@ -413,8 +415,12 @@ def index():
                             <div class="status-label">继电器切换时间</div>
                         </div>
                         <div class="status-item">
-                            <div class="status-value">0</div>
-                            <div class="status-label">已确认连接组</div>
+                            <div class="status-value">{confirmed_points_count}</div>
+                            <div class="status-label">当前已确认的点位关系数</div>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-value">{detected_conductive_count}</div>
+                            <div class="status-label">检测到的导通关系</div>
                         </div>
                         <div class="status-item">
                             <div class="status-value">{len(server.test_system.test_history)}</div>
@@ -468,16 +474,16 @@ def index():
                         <div class="status-label">关闭</div>
                     </div>
                     <div class="status-item">
-                        <div class="status-value">0个</div>
-                        <div class="status-label">已确认连接组</div>
+                        <div class="status-value">{confirmed_points_count}</div>
+                        <div class="status-label">已确认关系数</div>
                     </div>
                     <div class="status-item">
-                        <div class="status-value">{confirmed_points_count}个</div>
-                        <div class="status-label">已确认点位</div>
+                        <div class="status-value">{detected_conductive_count}</div>
+                        <div class="status-label">导通关系数</div>
                     </div>
                     <div class="status-item">
-                        <div class="status-value">{server.test_system.total_points - confirmed_points_count}个</div>
-                        <div class="status-label">未确认点位</div>
+                        <div class="status-value">{confirmed_non_conductive_count}</div>
+                        <div class="status-label">不导通关系数</div>
                     </div>
                 </div>
                 
@@ -804,6 +810,12 @@ def get_system_info():
     # 获取已确认的点位关系数量
     confirmed_points_count = server.test_system.get_confirmed_points_count()
     
+    # 获取检测到的导通关系数量
+    detected_conductive_count = server.test_system.get_detected_conductive_count()
+    
+    # 获取确认的不导通关系数量
+    confirmed_non_conductive_count = server.test_system.get_confirmed_non_conductive_count()
+    
     return jsonify({
         'success': True,
         'data': {
@@ -814,8 +826,9 @@ def get_system_info():
             'total_relay_operations': server.test_system.relay_operation_count,
             'total_power_on_operations': total_power_on_ops,
             'current_point_states_count': len(server.current_point_states),
-            'confirmed_clusters_count': 0,
-            'confirmed_points_count': confirmed_points_count  # 新增：已确认点位数量
+            'confirmed_points_count': confirmed_points_count,  # 已确认点位关系总数
+            'detected_conductive_count': detected_conductive_count,  # 检测到的导通关系数量
+            'confirmed_non_conductive_count': confirmed_non_conductive_count  # 确认的不导通关系数量
         }
     })
 

@@ -34,6 +34,39 @@ class WebFlaskTestServer:
         self.status_update_thread = threading.Thread(target=self._status_update_loop, daemon=True)
         self.status_update_thread.start()
     
+    def _calculate_default_conductivity_distribution(self, total_points: int) -> Dict[int, int]:
+        """
+        计算默认的导通分布
+        
+        Args:
+            total_points: 总点位数
+            
+        Returns:
+            Dict[int, int]: 导通分布字典 {导通数量: 点位数量}
+        """
+        # 🔧 新的比例设置：1个(90%), 2个(6%), 3个(3%), 4个(1%)
+        percentages = {
+            1: 0.90,  # 90%
+            2: 0.06,  # 6%
+            3: 0.03,  # 3%
+            4: 0.01   # 1%
+        }
+        
+        # 根据比例计算实际数量
+        distribution = {}
+        total_assigned = 0
+        
+        # 先按比例分配，除了最大的那个
+        for conductivity_count in [4, 3, 2]:  # 从小到大分配
+            count = round(total_points * percentages[conductivity_count])
+            distribution[conductivity_count] = count
+            total_assigned += count
+        
+        # 剩余的全部分配给1个导通的点位
+        distribution[1] = total_points - total_assigned
+        
+        return distribution
+    
     def _update_current_states(self):
         """更新当前点位状态缓存"""
         self.current_point_states = {}
@@ -173,24 +206,31 @@ class WebFlaskTestServer:
     
     def get_system_info(self) -> Dict[str, Any]:
         """获取系统信息"""
-        # 兼容本服务端中 test_history 为 dict 列表的结构
+        # 🔧 重要：统一数据源，直接使用 CableTestSystem 的数据，避免不一致
+        # 使用 CableTestSystem 的 test_history 而不是 WebFlaskTestServer 的独立 test_history
         try:
             total_power_on_ops = 0
-            for tr in self.test_history:
-                if isinstance(tr, dict):
-                    total_power_on_ops += int(tr.get('power_on_operations', 0) or 0)
-                else:
-                    total_power_on_ops += int(getattr(tr, 'power_on_operations', 0) or 0)
+            for tr in self.test_system.test_history:
+                # CableTestSystem.test_history 存储的是 TestResult 对象
+                total_power_on_ops += int(getattr(tr, 'power_on_operations', 0) or 0)
         except Exception:
             total_power_on_ops = 0
+        
+        # 获取新的统计信息
+        confirmed_points_count = self.test_system.get_confirmed_points_count()
+        detected_conductive_count = self.test_system.get_detected_conductive_count()
+        confirmed_non_conductive_count = self.test_system.get_confirmed_non_conductive_count()
+        
         return {
             'success': True,
             'total_points': self.test_system.total_points,
             'relay_switch_time': self.test_system.relay_switch_time,
-            'confirmed_clusters': len(self.confirmed_clusters),
-            'total_tests': len(self.test_history),
-            'total_relay_operations': self.test_system.relay_operation_count,
+            'total_tests': len(self.test_system.test_history),  # 使用 CableTestSystem 的测试历史
+            'total_relay_operations': self.test_system.relay_operation_count,  # 使用 CableTestSystem 的继电器计数
             'total_power_on_operations': total_power_on_ops,
+            'confirmed_points_count': confirmed_points_count,  # 已确认点位关系总数
+            'detected_conductive_count': detected_conductive_count,  # 检测到的导通关系数量
+            'confirmed_non_conductive_count': confirmed_non_conductive_count,  # 确认的不导通关系数量
             'timestamp': time.time()
         }
 
@@ -286,12 +326,14 @@ class WebFlaskTestServer:
                 payload = {}
             
             total_points = payload.get('total_points')
-            conductivity_distribution = payload.get('conductivity_distribution', {
-                1: 50,  # 默认值
-                2: 30,
-                3: 20,
-                4: 0
-            })
+            
+            # 🔧 重要修改：使用动态计算的默认导通分布
+            if 'conductivity_distribution' in payload:
+                conductivity_distribution = payload['conductivity_distribution']
+            else:
+                # 如果没有指定分布，使用动态计算的默认分布
+                default_total_points = total_points or self.test_system.total_points
+                conductivity_distribution = self._calculate_default_conductivity_distribution(default_total_points)
             
             # 重置系统
             self.test_system.reset_and_regenerate_with_distribution(total_points, conductivity_distribution)
@@ -503,17 +545,17 @@ HTML_TEMPLATE = """
              <button class="btn" onclick="runRandomExperiment()" style="background: #ff9800; margin-left: 10px;">随机实验</button>
              <div class="form-group" style="margin-top: 10px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
                  <label>总点位:</label>
-                 <input type="number" id="totalPoints" placeholder="总点位 (>=2)" min="2" value="100" style="width: 120px;" />
+                 <input type="number" id="totalPoints" placeholder="总点位 (>=2)" min="2" value="100" style="width: 120px;" onchange="updateConductivityDefaults()" />
                  <label>导通分布设置:</label>
                  <div style="display: flex; gap: 4px; align-items: center;">
                      <span>1个:</span>
-                     <input type="number" id="conductivity1" placeholder="数量" min="0" value="50" style="width: 60px;" />
+                     <input type="number" id="conductivity1" placeholder="数量" min="0" value="90" style="width: 60px;" />
                      <span>2个:</span>
-                     <input type="number" id="conductivity2" placeholder="数量" min="0" value="30" style="width: 60px;" />
+                     <input type="number" id="conductivity2" placeholder="数量" min="0" value="6" style="width: 60px;" />
                      <span>3个:</span>
-                     <input type="number" id="conductivity3" placeholder="数量" min="0" value="20" style="width: 60px;" />
+                     <input type="number" id="conductivity3" placeholder="数量" min="0" value="3" style="width: 60px;" />
                      <span>4个:</span>
-                     <input type="number" id="conductivity4" placeholder="数量" min="0" value="0" style="width: 60px;" />
+                     <input type="number" id="conductivity4" placeholder="数量" min="0" value="1" style="width: 60px;" />
                  </div>
                  <small style="color: #666; display: block; margin-top: 5px;">
                      说明：数字表示除自己以外，作为通电点位时能够导通的其他点位数量
@@ -712,7 +754,8 @@ HTML_TEMPLATE = """
                      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                          <div><strong>总点位:</strong> ${data.total_points.toLocaleString()}</div>
                          <div><strong>继电器切换时间:</strong> ${(data.relay_switch_time * 1000).toFixed(1)}ms</div>
-                         <div><strong>已确认连接组:</strong> ${data.confirmed_clusters}</div>
+                         <div><strong>当前已确认的点位关系数:</strong> ${data.confirmed_points_count || 0}</div>
+                         <div><strong>检测到的导通关系:</strong> ${data.detected_conductive_count || 0}</div>
                          <div><strong>总测试次数:</strong> ${data.total_tests}</div>
                          <div><strong>继电器操作总次数:</strong> ${data.total_relay_operations || 0}</div>
                          <div><strong>通电次数总和:</strong> ${totalPowerOns}</div>
@@ -1075,9 +1118,32 @@ HTML_TEMPLATE = """
              } catch (error) {
                  alert('请求失败: ' + error.message);
              }
-         }
-         
-         // 重置系统
+                 }
+        
+        // 🔧 新增：根据总点位数更新导通分布默认值
+        function updateConductivityDefaults() {
+            const totalPts = parseInt(document.getElementById('totalPoints').value || '100', 10);
+            
+            if (isNaN(totalPts) || totalPts < 2) {
+                return;
+            }
+            
+            // 计算新的默认分布（90%, 6%, 3%, 1%）
+            const conductivity4 = Math.round(totalPts * 0.01);  // 1%
+            const conductivity3 = Math.round(totalPts * 0.03);  // 3%
+            const conductivity2 = Math.round(totalPts * 0.06);  // 6%
+            const conductivity1 = totalPts - conductivity4 - conductivity3 - conductivity2;  // 剩余的
+            
+            // 更新输入框的值
+            document.getElementById('conductivity1').value = conductivity1;
+            document.getElementById('conductivity2').value = conductivity2;
+            document.getElementById('conductivity3').value = conductivity3;
+            document.getElementById('conductivity4').value = conductivity4;
+            
+            console.log(`总点位更新为${totalPts}，自动调整导通分布：1个(${conductivity1}), 2个(${conductivity2}), 3个(${conductivity3}), 4个(${conductivity4})`);
+        }
+        
+        // 重置系统
          async function resetSystem() {
              if (!confirm('确定要重置系统吗？这将清除所有测试历史并重新生成随机连接关系。')) {
                  return;
@@ -1085,10 +1151,10 @@ HTML_TEMPLATE = """
              
              try {
                  const totalPts = parseInt(document.getElementById('totalPoints').value || '100', 10);
-                 const conductivity1 = parseInt(document.getElementById('conductivity1').value || '50', 10);
-                 const conductivity2 = parseInt(document.getElementById('conductivity2').value || '30', 10);
-                 const conductivity3 = parseInt(document.getElementById('conductivity3').value || '20', 10);
-                 const conductivity4 = parseInt(document.getElementById('conductivity4').value || '0', 10);
+                                 const conductivity1 = parseInt(document.getElementById('conductivity1').value || '90', 10);
+                const conductivity2 = parseInt(document.getElementById('conductivity2').value || '6', 10);
+                const conductivity3 = parseInt(document.getElementById('conductivity3').value || '3', 10);
+                const conductivity4 = parseInt(document.getElementById('conductivity4').value || '1', 10);
                  
                  if (isNaN(totalPts) || totalPts < 2) {
                      alert('请输入合法的总点位（>=2）');
