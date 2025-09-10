@@ -514,19 +514,30 @@ class AdaptiveGroupingTester:
                     total_possible_relations = self.total_points * (self.total_points - 1)
                     unknown_ratio = (total_possible_relations - server_confirmed_count) / total_possible_relations
                     
-                    # 获取当前阶段的阈值配置
-                    phase_thresholds = self.config['test_execution']['phase_switch_criteria']['phase_thresholds']
+                    # 🔧 重要：根据未知关系比例确定目标策略
+                    if unknown_ratio >= 0.5:  # 50%以上
+                        target_strategy = "adaptive_50"
+                        target_ratio = 0.5
+                    elif unknown_ratio >= 0.3:  # 30%-50%
+                        target_strategy = "adaptive_30"
+                        target_ratio = 0.3
+                    elif unknown_ratio >= 0.1:  # 10%-30%
+                        target_strategy = "adaptive_10"
+                        target_ratio = 0.1
+                    else:  # 10%以下
+                        target_strategy = "binary_search"
+                        target_ratio = 0.0
                     
-                    # 确定当前阶段
-                    current_phase_name = self.get_current_phase_name(unknown_ratio)
-                    target_phase_name = self.get_target_phase_name(unknown_ratio)
+                    # 获取当前策略
+                    current_ratio = self.get_current_group_ratio()
+                    current_strategy = self.get_strategy_name_by_ratio(current_ratio)
                     
-                    # 如果目标阶段与当前阶段不同，需要切换
-                    if current_phase_name != target_phase_name:
+                    # 如果目标策略与当前策略不同，需要切换
+                    if current_strategy != target_strategy:
                         print(f"🔄 未知关系比例: {unknown_ratio:.1%}")
-                        print(f"当前阶段: {current_phase_name}")
-                        print(f"目标阶段: {target_phase_name}")
-                        print(f"准备切换阶段")
+                        print(f"当前策略: {current_strategy} ({current_ratio:.1%})")
+                        print(f"目标策略: {target_strategy} ({target_ratio:.1%})")
+                        print(f"准备切换策略")
                         return True
                     
                     return False
@@ -537,22 +548,44 @@ class AdaptiveGroupingTester:
         total_possible_relations = self.total_points * (self.total_points - 1)
         unknown_ratio = len(self.unknown_relations) / total_possible_relations
         
-        # 获取当前阶段的阈值配置
-        phase_thresholds = self.config['test_execution']['phase_switch_criteria']['phase_thresholds']
+        # 🔧 重要：根据未知关系比例确定目标策略
+        if unknown_ratio >= 0.5:  # 50%以上
+            target_strategy = "adaptive_50"
+            target_ratio = 0.5
+        elif unknown_ratio >= 0.3:  # 30%-50%
+            target_strategy = "adaptive_30"
+            target_ratio = 0.3
+        elif unknown_ratio >= 0.1:  # 10%-30%
+            target_strategy = "adaptive_10"
+            target_ratio = 0.1
+        else:  # 10%以下
+            target_strategy = "binary_search"
+            target_ratio = 0.0
         
-        # 确定当前阶段
-        current_phase_name = self.get_current_phase_name(unknown_ratio)
-        target_phase_name = self.get_target_phase_name(unknown_ratio)
+        # 获取当前策略
+        current_ratio = self.get_current_group_ratio()
+        current_strategy = self.get_strategy_name_by_ratio(current_ratio)
         
-        # 如果目标阶段与当前阶段不同，需要切换
-        if current_phase_name != target_phase_name:
+        # 如果目标策略与当前策略不同，需要切换
+        if current_strategy != target_strategy:
             print(f"🔄 未知关系比例: {unknown_ratio:.1%}")
-            print(f"当前阶段: {current_phase_name}")
-            print(f"目标阶段: {target_phase_name}")
-            print(f"准备切换阶段")
+            print(f"当前策略: {current_strategy} ({current_ratio:.1%})")
+            print(f"目标策略: {target_strategy} ({target_ratio:.1%})")
+            print(f"准备切换策略")
             return True
         
         return False
+    
+    def get_strategy_name_by_ratio(self, ratio: float) -> str:
+        """根据分组比例获取策略名称"""
+        if ratio >= 0.5:
+            return "adaptive_50"
+        elif ratio >= 0.3:
+            return "adaptive_30"
+        elif ratio >= 0.1:
+            return "adaptive_10"
+        else:
+            return "binary_search"
     
     def get_current_phase_name(self, unknown_ratio: float) -> str:
         """根据当前分组比例确定当前阶段名称"""
@@ -588,15 +621,24 @@ class AdaptiveGroupingTester:
                     total_possible_relations = self.total_points * (self.total_points - 1)
                     unknown_ratio = (total_possible_relations - server_confirmed_count) / total_possible_relations
                     
-                    # 获取目标阶段
-                    target_phase_name = self.get_target_phase_name(unknown_ratio)
-                    phase_thresholds = self.config['test_execution']['phase_switch_criteria']['phase_thresholds']
+                    # 🔧 重要：根据未知关系比例确定目标策略
+                    if unknown_ratio >= 0.5:  # 50%以上
+                        target_strategy = "adaptive_50"
+                        target_ratio = 0.5
+                    elif unknown_ratio >= 0.3:  # 30%-50%
+                        target_strategy = "adaptive_30"
+                        target_ratio = 0.3
+                    elif unknown_ratio >= 0.1:  # 10%-30%
+                        target_strategy = "adaptive_10"
+                        target_ratio = 0.1
+                    else:  # 10%以下
+                        target_strategy = "binary_search"
+                        target_ratio = 0.0
                     
-                    if target_phase_name not in phase_thresholds:
-                        print(f"🏁 切换到二分法阶段")
+                    # 如果是二分法策略，不需要切换阶段
+                    if target_strategy == "binary_search":
+                        print(f"🏁 切换到二分法策略")
                         return False
-                    
-                    target_ratio = phase_thresholds[target_phase_name]['group_ratio']
                     
                     # 找到对应的阶段索引
                     target_phase_index = None
@@ -613,7 +655,7 @@ class AdaptiveGroupingTester:
                     self.current_phase = target_phase_index
                     new_ratio = self.get_current_group_ratio()
                     
-                    print(f"🔄 切换到测试阶段: {target_phase_name}")
+                    print(f"🔄 切换到测试策略: {target_strategy}")
                     print(f"新的分组比例: {new_ratio:.1%}")
                     print(f"新的分组大小: {self.get_current_group_size()}")
                     print(f"未知关系比例: {unknown_ratio:.1%}")
@@ -626,15 +668,24 @@ class AdaptiveGroupingTester:
         total_possible_relations = self.total_points * (self.total_points - 1)
         unknown_ratio = len(self.unknown_relations) / total_possible_relations
         
-        # 获取目标阶段
-        target_phase_name = self.get_target_phase_name(unknown_ratio)
-        phase_thresholds = self.config['test_execution']['phase_switch_criteria']['phase_thresholds']
+        # 🔧 重要：根据未知关系比例确定目标策略
+        if unknown_ratio >= 0.5:  # 50%以上
+            target_strategy = "adaptive_50"
+            target_ratio = 0.5
+        elif unknown_ratio >= 0.3:  # 30%-50%
+            target_strategy = "adaptive_30"
+            target_ratio = 0.3
+        elif unknown_ratio >= 0.1:  # 10%-30%
+            target_strategy = "adaptive_10"
+            target_ratio = 0.1
+        else:  # 10%以下
+            target_strategy = "binary_search"
+            target_ratio = 0.0
         
-        if target_phase_name not in phase_thresholds:
-            print(f"🏁 切换到二分法阶段")
+        # 如果是二分法策略，不需要切换阶段
+        if target_strategy == "binary_search":
+            print(f"🏁 切换到二分法策略")
             return False
-        
-        target_ratio = phase_thresholds[target_phase_name]['group_ratio']
         
         # 找到对应的阶段索引
         target_phase_index = None
@@ -651,7 +702,7 @@ class AdaptiveGroupingTester:
         self.current_phase = target_phase_index
         new_ratio = self.get_current_group_ratio()
         
-        print(f"🔄 切换到测试阶段: {target_phase_name}")
+        print(f"🔄 切换到测试策略: {target_strategy}")
         print(f"新的分组比例: {new_ratio:.1%}")
         print(f"新的分组大小: {self.get_current_group_size()}")
         print(f"未知关系比例: {unknown_ratio:.1%}")
@@ -670,23 +721,26 @@ class AdaptiveGroupingTester:
                     total_possible_relations = self.total_points * (self.total_points - 1)
                     unknown_ratio = (total_possible_relations - server_confirmed_count) / total_possible_relations
                     
-                    # 获取目标阶段配置
-                    target_phase_name = self.get_target_phase_name(unknown_ratio)
-                    phase_thresholds = self.config['test_execution']['phase_switch_criteria']['phase_thresholds']
+                    # 🔧 重要：根据未知关系比例动态选择策略
+                    if unknown_ratio >= 0.5:  # 50%以上
+                        strategy_ratio = 0.5
+                        strategy_name = "adaptive_50"
+                    elif unknown_ratio >= 0.3:  # 30%-50%
+                        strategy_ratio = 0.3
+                        strategy_name = "adaptive_30"
+                    elif unknown_ratio >= 0.1:  # 10%-30%
+                        strategy_ratio = 0.1
+                        strategy_name = "adaptive_10"
+                    else:  # 10%以下
+                        strategy_ratio = 0.0
+                        strategy_name = "binary_search"
                     
-                    # 如果是二分法阶段，返回0（不使用集群）
-                    if target_phase_name == 'binary_search' or target_phase_name not in phase_thresholds:
-                        return 0.0
-                    
-                    # 返回目标阶段的分组比例
-                    target_ratio = phase_thresholds[target_phase_name]['group_ratio']
-                    
-                    print(f"🔍 动态分组比例计算 (服务端数据):")
+                    print(f"🔍 动态策略选择 (服务端数据):")
                     print(f"  未知关系比例: {unknown_ratio:.1%}")
-                    print(f"  目标阶段: {target_phase_name}")
-                    print(f"  分组比例: {target_ratio:.1%}")
+                    print(f"  选择策略: {strategy_name}")
+                    print(f"  分组比例: {strategy_ratio:.1%}")
                     
-                    return target_ratio
+                    return strategy_ratio
         except Exception as e:
             print(f"⚠️  获取服务端数据失败，使用本地数据: {e}")
         
@@ -694,23 +748,26 @@ class AdaptiveGroupingTester:
         total_possible_relations = self.total_points * (self.total_points - 1)
         unknown_ratio = len(self.unknown_relations) / total_possible_relations
         
-        # 获取目标阶段配置
-        target_phase_name = self.get_target_phase_name(unknown_ratio)
-        phase_thresholds = self.config['test_execution']['phase_switch_criteria']['phase_thresholds']
+        # 🔧 重要：根据未知关系比例动态选择策略
+        if unknown_ratio >= 0.5:  # 50%以上
+            strategy_ratio = 0.5
+            strategy_name = "adaptive_50"
+        elif unknown_ratio >= 0.3:  # 30%-50%
+            strategy_ratio = 0.3
+            strategy_name = "adaptive_30"
+        elif unknown_ratio >= 0.1:  # 10%-30%
+            strategy_ratio = 0.1
+            strategy_name = "adaptive_10"
+        else:  # 10%以下
+            strategy_ratio = 0.0
+            strategy_name = "binary_search"
         
-        # 如果是二分法阶段，返回0（不使用集群）
-        if target_phase_name == 'binary_search' or target_phase_name not in phase_thresholds:
-            return 0.0
-        
-        # 返回目标阶段的分组比例
-        target_ratio = phase_thresholds[target_phase_name]['group_ratio']
-        
-        print(f"🔍 动态分组比例计算 (本地数据):")
+        print(f"🔍 动态策略选择 (本地数据):")
         print(f"  未知关系比例: {unknown_ratio:.1%}")
-        print(f"  目标阶段: {target_phase_name}")
-        print(f"  分组比例: {target_ratio:.1%}")
+        print(f"  选择策略: {strategy_name}")
+        print(f"  分组比例: {strategy_ratio:.1%}")
         
-        return target_ratio
+        return strategy_ratio
     
     def create_point_clusters(self) -> List[List[int]]:
         """创建点位集群 - 按比例切割为不相交的集群，使用随机分组策略"""
@@ -1064,9 +1121,15 @@ class AdaptiveGroupingTester:
         if max_tests is None:
             max_tests = self.config['test_execution']['max_tests_per_phase']
         
+        # 🔧 重要：检查当前策略，如果是二分法则直接调用二分法测试
+        current_ratio = self.get_current_group_ratio()
+        if current_ratio == 0.0:  # 二分法策略
+            print(f"\n🔍 检测到二分法策略，切换到二分法测试")
+            return self.run_binary_search_testing(max_tests)
+        
         print(f"\n🚀 开始运行阶段 {self.current_phase} 测试")
         print(f"目标测试次数: {max_tests}")
-        print(f"当前分组比例: {self.get_current_group_ratio():.1%}")
+        print(f"当前分组比例: {current_ratio:.1%}")
         
         tests_run = 0
         phase_start_time = time.time()
@@ -1503,8 +1566,14 @@ class AdaptiveGroupingTester:
         
         start_time = time.time()
         
-        # 第一阶段：自适应分组测试
-        print(f"\n🎯 第一阶段：自适应分组测试")
+        # 🔧 重要：根据初始未知关系比例确定测试策略
+        initial_ratio = self.get_current_group_ratio()
+        initial_strategy = self.get_strategy_name_by_ratio(initial_ratio)
+        print(f"\n🎯 初始测试策略: {initial_strategy} ({initial_ratio:.1%})")
+        print("=" * 40)
+        
+        # 第一阶段：动态策略测试
+        print(f"\n🎯 第一阶段：动态策略测试")
         print("=" * 40)
         
         phase_tests = 0

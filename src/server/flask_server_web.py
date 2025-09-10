@@ -79,6 +79,9 @@ class WebFlaskTestServer:
         # 更新所有点位状态 - 确保统计准确
         self._update_current_states()
         
+        # 确定当前使用的策略
+        strategy = self._determine_test_strategy(test_result)
+        
         # 添加到测试历史
         test_record = {
             'timestamp': time.time(),
@@ -88,7 +91,8 @@ class WebFlaskTestServer:
             'connections_found': len(test_result.detected_connections),
             'duration': test_result.test_duration,
             'relay_operations': test_result.relay_operations,
-            'power_on_operations': getattr(test_result, 'power_on_operations', 0)
+            'power_on_operations': getattr(test_result, 'power_on_operations', 0),
+            'strategy': strategy  # 添加策略信息
         }
         self.test_history.append(test_record)
         
@@ -178,30 +182,70 @@ class WebFlaskTestServer:
         try:
             power_source = experiment_config.get('power_source')
             test_points = experiment_config.get('test_points', [])
+            strategy = experiment_config.get('strategy', 'unknown')
             
             if power_source is None:
                 return {'success': False, 'error': '缺少电源点位参数'}
             
-            # 运行测试（保持客户端请求原样执行）
-            test_result = self.test_system.run_single_test(power_source, test_points)
+            print(f"🔍 运行实验: 电源点位={power_source}, 测试点位={test_points}, 策略={strategy}")
             
-            # 更新状态
-            self._update_clusters_from_test(test_result)
-            
-            return {
-                'success': True,
-                'data': {
-                    'test_result': {
-                        'power_source': test_result.power_source,
-                        'test_points': test_result.active_points,
-                        'connections': [c.__dict__ for c in test_result.detected_connections],
-                        'duration': test_result.test_duration,
-                        'relay_operations': test_result.relay_operations,
-                        'power_on_operations': getattr(test_result, 'power_on_operations', 0),
-                        'timestamp': time.time()
+            # 根据策略选择测试方法
+            if strategy == 'binary_search':
+                # 使用二分法测试
+                print(f"🔍 使用二分法策略进行测试")
+                test_results = self.test_system.run_binary_search_test(power_source, test_points)
+                
+                # 将所有测试结果添加到历史记录，并标记为二分法策略
+                for test_result in test_results:
+                    # 为每个测试结果添加策略信息
+                    test_result.strategy = strategy
+                    self._update_clusters_from_test(test_result)
+                
+                # 返回最后一个测试结果（最终确认结果）
+                final_result = test_results[-1] if test_results else None
+                if not final_result:
+                    return {'success': False, 'error': '二分法测试失败'}
+                
+                return {
+                    'success': True,
+                    'data': {
+                        'test_result': {
+                            'power_source': final_result.power_source,
+                            'test_points': final_result.active_points,
+                            'connections': [c.__dict__ for c in final_result.detected_connections],
+                            'duration': sum(tr.test_duration for tr in test_results),
+                            'relay_operations': sum(tr.relay_operations for tr in test_results),
+                            'power_on_operations': sum(getattr(tr, 'power_on_operations', 0) for tr in test_results),
+                            'timestamp': time.time(),
+                            'binary_search_steps': len(test_results),
+                            'strategy': strategy
+                        }
                     }
                 }
-            }
+            else:
+                # 使用普通测试
+                test_result = self.test_system.run_single_test(power_source, test_points)
+                
+                # 为测试结果添加策略信息
+                test_result.strategy = strategy
+                
+                # 更新状态
+                self._update_clusters_from_test(test_result)
+                
+                return {
+                    'success': True,
+                    'data': {
+                        'test_result': {
+                            'power_source': test_result.power_source,
+                            'test_points': test_result.active_points,
+                            'connections': [c.__dict__ for c in test_result.detected_connections],
+                            'duration': test_result.test_duration,
+                            'relay_operations': test_result.relay_operations,
+                            'power_on_operations': getattr(test_result, 'power_on_operations', 0),
+                            'timestamp': time.time()
+                        }
+                    }
+                }
         except Exception as e:
             return {'success': False, 'error': str(e)}
     
@@ -283,28 +327,38 @@ class WebFlaskTestServer:
             return {'success': False, 'error': str(e)}
     
     def _determine_test_strategy(self, test_result) -> str:
-        """根据测试结果确定使用的策略"""
+        """根据未知关系比例确定使用的策略"""
         try:
-            # 根据测试点位数量来判断策略
-            test_points_count = len(test_result.active_points) - 1  # 排除电源点位
+            # 计算未知关系比例
             total_points = self.test_system.total_points
+            total_relations = total_points * (total_points - 1) // 2  # 总关系数
             
-            # 计算测试点位占总点位的比例
-            if test_points_count == 0:
-                return 'unknown'
+            # 获取当前已确认的关系数量
+            current_conductive_count = self.test_system.get_detected_conductive_count()
+            current_non_conductive_count = self.test_system.get_confirmed_non_conductive_count()
+            confirmed_relations = current_conductive_count + current_non_conductive_count
             
-            ratio = test_points_count / total_points
+            # 计算未知关系比例
+            unknown_relations = total_relations - confirmed_relations
+            unknown_ratio = unknown_relations / total_relations if total_relations > 0 else 0
             
-            # 根据比例判断策略
-            if ratio > 0.25:  # 大于25%
-                return 'phase_1'  # 30%集群策略
-            elif ratio > 0.15:  # 15%-25%
-                return 'phase_2'  # 20%集群策略
-            elif ratio > 0.05:  # 5%-15%
-                return 'phase_3'  # 10%集群策略
-            else:  # 小于5%
+            print(f"🔍 策略确定调试:")
+            print(f"  总关系数: {total_relations}")
+            print(f"  已确认关系数: {confirmed_relations}")
+            print(f"  未知关系数: {unknown_relations}")
+            print(f"  未知关系比例: {unknown_ratio:.2%}")
+            
+            # 根据未知关系比例判断策略
+            if unknown_ratio >= 0.5:  # 50%以上
+                return 'adaptive_50'  # 50%集群策略
+            elif unknown_ratio >= 0.3:  # 30%-50%
+                return 'adaptive_30'  # 30%集群策略
+            elif unknown_ratio >= 0.1:  # 10%-30%
+                return 'adaptive_10'  # 10%集群策略
+            else:  # 10%以下
                 return 'binary_search'  # 二分法策略
-        except Exception:
+        except Exception as e:
+            print(f"策略确定错误: {e}")
             return 'unknown'
 
     # ============== 新增：点-点关系接口封装 ==============
@@ -726,10 +780,11 @@ HTML_TEMPLATE = """
         let progressChart = null; // 进度图表实例
         let chartData = []; // 图表数据
         let strategyColors = {
-            'phase_1': '#FF6384', // 30%集群策略 - 红色
-            'phase_2': '#36A2EB', // 20%集群策略 - 蓝色
-            'phase_3': '#FFCE56', // 10%集群策略 - 黄色
-            'binary_search': '#4BC0C0' // 二分法策略 - 青色
+            'adaptive_50': '#FF6384', // 50%集群策略 - 红色
+            'adaptive_30': '#36A2EB', // 30%集群策略 - 蓝色
+            'adaptive_10': '#FFCE56', // 10%集群策略 - 黄色
+            'binary_search': '#4BC0C0', // 二分法策略 - 青色
+            'unknown': '#CCCCCC' // 未知策略 - 灰色
         };
         
         // 连接组ID到短名称的映射，保持会话内稳定
@@ -1031,12 +1086,105 @@ HTML_TEMPLATE = """
         // 获取策略名称
         function getStrategyName(strategy) {
             const strategyNames = {
-                'phase_1': '30%集群策略',
-                'phase_2': '20%集群策略', 
-                'phase_3': '10%集群策略',
-                'binary_search': '二分法策略'
+                'adaptive_50': '50%集群策略',
+                'adaptive_30': '30%集群策略',
+                'adaptive_10': '10%集群策略',
+                'binary_search': '二分法策略',
+                'unknown': '未知策略'
             };
             return strategyNames[strategy] || strategy;
+        }
+        
+        // 确定当前策略
+        async function determineCurrentStrategy() {
+            try {
+                // 异步获取系统信息来计算未知关系比例
+                const response = await fetch('/api/system/info');
+                const data = await response.json();
+                
+                if (!data.success) {
+                    console.warn('获取系统信息失败，使用默认策略');
+                    return 'adaptive_50'; // 默认使用50%策略
+                }
+                
+                const totalPoints = data.total_points || 100;
+                const totalRelations = totalPoints * (totalPoints - 1) / 2;
+                const confirmedRelations = data.confirmed_points_count || 0;
+                const unknownRelations = totalRelations - confirmedRelations;
+                const unknownRatio = unknownRelations / totalRelations;
+                
+                console.log(`策略计算: 总关系数=${totalRelations}, 已确认=${confirmedRelations}, 未知=${unknownRelations}, 比例=${(unknownRatio * 100).toFixed(2)}%`);
+                
+                if (unknownRatio >= 0.5) {
+                    return 'adaptive_50';
+                } else if (unknownRatio >= 0.3) {
+                    return 'adaptive_30';
+                } else if (unknownRatio >= 0.1) {
+                    return 'adaptive_10';
+                } else {
+                    return 'binary_search';
+                }
+            } catch (error) {
+                console.error('获取系统信息失败:', error);
+                return 'adaptive_50'; // 默认使用50%策略
+            }
+        }
+        
+        // 检测策略变更节点
+        function detectStrategyChanges(data) {
+            const changes = [];
+            for (let i = 1; i < data.length; i++) {
+                if (data[i].strategy !== data[i-1].strategy) {
+                    changes.push({
+                        index: i,
+                        fromStrategy: data[i-1].strategy,
+                        toStrategy: data[i].strategy,
+                        label: `策略变更: ${getStrategyName(data[i-1].strategy)} → ${getStrategyName(data[i].strategy)}`
+                    });
+                }
+            }
+            return changes;
+        }
+        
+        // 更新策略变更标注
+        function updateStrategyAnnotations(strategyChanges) {
+            if (!progressChart) return;
+            
+            // 清除现有标注
+            if (progressChart.options.plugins.annotation) {
+                progressChart.options.plugins.annotation.annotations = {};
+            } else {
+                progressChart.options.plugins.annotation = {
+                    annotations: {}
+                };
+            }
+            
+            // 添加策略变更标注
+            strategyChanges.forEach((change, index) => {
+                const annotationId = `strategyChange${index}`;
+                progressChart.options.plugins.annotation.annotations[annotationId] = {
+                    type: 'line',
+                    mode: 'vertical',
+                    scaleID: 'x',
+                    value: change.index,
+                    borderColor: '#FF6B6B',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    label: {
+                        content: change.label,
+                        enabled: true,
+                        position: 'top',
+                        backgroundColor: 'rgba(255, 107, 107, 0.8)',
+                        color: 'white',
+                        font: {
+                            size: 10,
+                            weight: 'bold'
+                        },
+                        padding: 4,
+                        borderRadius: 4
+                    }
+                };
+            });
         }
         
         // 更新进度图表
@@ -1070,10 +1218,18 @@ HTML_TEMPLATE = """
                     
                     console.log('图表数据准备完成:', { labels, values });
                     
+                    // 检测策略变更节点
+                    const strategyChanges = detectStrategyChanges(chartData);
+                    console.log('策略变更节点:', strategyChanges);
+                    
                     // 更新图表
                     if (progressChart) {
                         progressChart.data.labels = labels;
                         progressChart.data.datasets[0].data = values;
+                        
+                        // 添加策略变更标注
+                        updateStrategyAnnotations(strategyChanges);
+                        
                         progressChart.update();
                         console.log(`图表更新完成，数据点: ${chartData.length}`);
                     } else {
@@ -1082,6 +1238,10 @@ HTML_TEMPLATE = """
                         if (progressChart) {
                             progressChart.data.labels = labels;
                             progressChart.data.datasets[0].data = values;
+                            
+                            // 添加策略变更标注
+                            updateStrategyAnnotations(strategyChanges);
+                            
                             progressChart.update();
                         }
                     }
@@ -1269,6 +1429,7 @@ HTML_TEMPLATE = """
                      console.log('active_points:', test.active_points);
                      console.log('test_duration:', test.test_duration);
                      console.log('detected_connections:', test.detected_connections);
+                     console.log('strategy:', test.strategy);
                      
                      const testPoints = test.active_points && test.active_points.length > 0 
                          ? test.active_points.join(', ') 
@@ -1282,7 +1443,12 @@ HTML_TEMPLATE = """
                      const duration = test.test_duration || 0;
                      const durationStr = duration > 0 ? `${(duration * 1000).toFixed(3)}s` : '0.000s';
                      
-                     console.log('计算结果 - testPoints:', testPoints, 'durationStr:', durationStr);
+                     // 获取策略名称和颜色
+                     const strategy = test.strategy || 'unknown';
+                     const strategyName = getStrategyName(strategy);
+                     const strategyColor = strategyColors[strategy] || '#CCCCCC';
+                     
+                     console.log('计算结果 - testPoints:', testPoints, 'durationStr:', durationStr, 'strategy:', strategyName);
                      
                      return `
                          <div class="test-record">
@@ -1297,6 +1463,7 @@ HTML_TEMPLATE = """
                                  <div><strong>测试点位:</strong> ${testPoints}</div>
                                  <div><strong>通电次数:</strong> ${test.power_on_operations || 0}</div>
                                  <div><strong>耗时:</strong> ${durationStr}</div>
+                                 <div><strong>集群策略:</strong> <span style="color: ${strategyColor}; font-weight: bold;">${strategyName}</span></div>
                              </div>
                          </div>
                      `;
@@ -1428,6 +1595,10 @@ HTML_TEMPLATE = """
             
             console.log(`开始实验: 电源点位=${powerSourceId}, 测试点位=${testPointIds.join(',')}`);
             
+            // 确定当前策略
+            const currentStrategy = await determineCurrentStrategy();
+            console.log(`当前策略: ${currentStrategy}`);
+            
             try {
                 const response = await fetch('/api/experiment', {
                     method: 'POST',
@@ -1436,7 +1607,8 @@ HTML_TEMPLATE = """
                     },
                     body: JSON.stringify({
                         power_source: powerSourceId,
-                        test_points: testPointIds
+                        test_points: testPointIds,
+                        strategy: currentStrategy
                     }),
                 });
                 
@@ -1470,12 +1642,17 @@ HTML_TEMPLATE = """
                  const powerSource = Math.floor(Math.random() * 100);
                  const testPoints = Array.from({length: Math.floor(Math.random() * 20) + 1}, () => Math.floor(Math.random() * 100));
                  
+                 // 确定当前策略
+                 const currentStrategy = await determineCurrentStrategy();
+                 console.log(`随机实验当前策略: ${currentStrategy}`);
+                 
                  const response = await fetch('/api/experiment', {
                      method: 'POST',
                      headers: { 'Content-Type': 'application/json' },
                      body: JSON.stringify({
                          power_source: powerSource,
-                         test_points: testPoints
+                         test_points: testPoints,
+                         strategy: currentStrategy
                      })
                  });
                  

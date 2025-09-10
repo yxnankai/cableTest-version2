@@ -408,6 +408,56 @@ class CableTestSystem:
         
         logger.info(f"关系矩阵更新完成")
 
+    def run_binary_search_test(self, power_source: int, candidate_points: List[int]) -> List[TestResult]:
+        """
+        运行二分法测试，精确确认导通关系
+        
+        Args:
+            power_source: 电源点位ID
+            candidate_points: 候选测试点位列表
+            
+        Returns:
+            List[TestResult]: 测试结果列表
+        """
+        test_results = []
+        remaining_points = candidate_points.copy()
+        
+        print(f"🔍 开始二分法测试: 电源点位{power_source}, 候选点位{remaining_points}")
+        
+        while len(remaining_points) > 1:
+            # 选择一半的点位进行测试
+            half_size = len(remaining_points) // 2
+            test_points = remaining_points[:half_size]
+            
+            print(f"🔍 二分法测试: 测试{len(test_points)}个点位 {test_points}")
+            
+            # 执行测试
+            test_result = self.run_single_test(power_source, test_points)
+            test_results.append(test_result)
+            
+            # 检查是否有导通
+            if test_result.detected_connections:
+                print(f"🔍 发现导通关系，继续在{test_points}中搜索")
+                remaining_points = test_points
+            else:
+                print(f"🔍 未发现导通关系，在剩余点位中搜索")
+                remaining_points = remaining_points[half_size:]
+        
+        # 如果只剩一个点位，进行最终确认测试
+        if len(remaining_points) == 1:
+            final_point = remaining_points[0]
+            print(f"🔍 最终确认测试: 电源点位{power_source} -> 测试点位{final_point}")
+            
+            final_test = self.run_single_test(power_source, [final_point])
+            test_results.append(final_test)
+            
+            if final_test.detected_connections:
+                print(f"✅ 确认导通关系: {power_source} <-> {final_point}")
+            else:
+                print(f"❌ 确认不导通关系: {power_source} <-> {final_point}")
+        
+        return test_results
+
     def run_single_test(self, power_source: int, test_points: List[int]) -> TestResult:
         """
         运行单个测试
@@ -1559,13 +1609,14 @@ class RelayStateManager:
             current_relay_states = self.last_full_relay_states.copy()
         
         # 🔧 重要：调试信息 - 显示继电器状态详情
-        print(f"  继电器状态详情:")
-        print(f"    当前电源点位: {self.current_power_source}")
-        print(f"    当前激活测试点位: {sorted(self.active_test_points)}")
-        print(f"    实际继电器状态字典: {dict((k, v.value) for k, v in self.relay_states.items() if v == RelayState.ON)}")
-        print(f"    上一次完整继电器状态集合: {sorted(self.last_full_relay_states)}")
-        print(f"    本次需要的继电器状态集合: {sorted(new_relay_states)}")
-        print(f"    继电器状态是否相同: {new_relay_states == current_relay_states}")
+        print(f"🔌 继电器状态详情:")
+        print(f"  当前电源点位: {self.current_power_source}")
+        print(f"  当前激活测试点位: {sorted(self.active_test_points)}")
+        print(f"  实际继电器状态字典: {dict((k, v.value) for k, v in self.relay_states.items() if v == RelayState.ON)}")
+        print(f"  上一次完整继电器状态集合: {sorted(self.last_full_relay_states)}")
+        print(f"  本次需要的继电器状态集合: {sorted(new_relay_states)}")
+        print(f"  继电器状态是否相同: {new_relay_states == current_relay_states}")
+        print(f"  当前继电器状态集合: {sorted(current_relay_states)}")
         
         # 🔧 重要：继电器状态比较调试信息
         print(f"🔌 继电器状态比较调试:")
@@ -1604,6 +1655,12 @@ class RelayStateManager:
                 # 新增的点位在原来的状态中，减少的点位在新的状态中
                 new_point = list(diff_new)[0]
                 current_point = list(diff_current)[0]
+                
+                print(f"🔌 检查电源点位和测试点位交换:")
+                print(f"  新增点位: {new_point}")
+                print(f"  减少点位: {current_point}")
+                print(f"  新增点位在原来状态中: {new_point in current_relay_states}")
+                print(f"  减少点位在新状态中: {current_point in new_relay_states}")
                 
                 if (new_point in current_relay_states and current_point in new_relay_states):
                     print(f"🔌 电源点位和测试点位交换，继电器状态基本相同，返回0")
