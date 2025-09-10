@@ -314,13 +314,17 @@ class AdaptiveGroupingTester:
         
         return selected_points, power_source
     
-    def run_single_test(self, test_points: List[int], power_source: int) -> Dict[str, Any]:
+    def run_single_test(self, test_points: List[int], power_source: int, strategy_name: str = None) -> Dict[str, Any]:
         """运行单次测试"""
         try:
             payload = {
                 "power_source": power_source,
                 "test_points": test_points
             }
+            
+            # 如果提供了策略名称，添加到payload中
+            if strategy_name:
+                payload["strategy"] = strategy_name
             
             print(f"🔍 发送测试请求: {payload}")
             
@@ -682,6 +686,16 @@ class AdaptiveGroupingTester:
     
     def get_current_group_ratio(self) -> float:
         """获取当前阶段的分组比例 - 基于未知关系比例动态计算"""
+        strategy_ratio, _ = self._get_strategy_info()
+        return strategy_ratio
+    
+    def get_current_strategy_name(self) -> str:
+        """获取当前策略名称"""
+        _, strategy_name = self._get_strategy_info()
+        return strategy_name
+    
+    def _get_strategy_info(self) -> tuple:
+        """获取策略信息 - 返回(策略比例, 策略名称)"""
         # 🔧 重要：优先使用服务端数据计算未知关系比例，确保与状态显示一致
         try:
             response = requests.get(f"{self.base_url}/api/system/info")
@@ -693,15 +707,14 @@ class AdaptiveGroupingTester:
                     unknown_ratio = (total_possible_relations - server_confirmed_count) / total_possible_relations
                     
                     # 🔧 重要：根据配置的策略阈值动态选择策略
-                    strategy_ratio = self._get_strategy_by_unknown_ratio(unknown_ratio)
-                    strategy_name = self.get_strategy_name_by_ratio(strategy_ratio)
+                    strategy_ratio, strategy_name = self._get_strategy_by_unknown_ratio(unknown_ratio)
                     
                     print(f"🔍 动态策略选择 (服务端数据):")
                     print(f"  未知关系比例: {unknown_ratio:.1%}")
                     print(f"  选择策略: {strategy_name}")
                     print(f"  分组比例: {strategy_ratio:.1%}")
                     
-                    return strategy_ratio
+                    return strategy_ratio, strategy_name
         except Exception as e:
             print(f"⚠️  获取服务端数据失败，使用本地数据: {e}")
         
@@ -710,18 +723,17 @@ class AdaptiveGroupingTester:
         unknown_ratio = len(self.unknown_relations) / total_possible_relations
         
         # 🔧 重要：根据配置的策略阈值动态选择策略
-        strategy_ratio = self._get_strategy_by_unknown_ratio(unknown_ratio)
-        strategy_name = self.get_strategy_name_by_ratio(strategy_ratio)
+        strategy_ratio, strategy_name = self._get_strategy_by_unknown_ratio(unknown_ratio)
         
         print(f"🔍 动态策略选择 (本地数据):")
         print(f"  未知关系比例: {unknown_ratio:.1%}")
         print(f"  选择策略: {strategy_name}")
         print(f"  分组比例: {strategy_ratio:.1%}")
         
-        return strategy_ratio
+        return strategy_ratio, strategy_name
     
-    def _get_strategy_by_unknown_ratio(self, unknown_ratio: float) -> float:
-        """根据未知关系比例和配置的策略阈值选择策略"""
+    def _get_strategy_by_unknown_ratio(self, unknown_ratio: float) -> tuple:
+        """根据未知关系比例和配置的策略阈值选择策略，返回(策略比例, 策略名称)"""
         # 获取策略配置
         if 'test_execution' in self.config and 'phase_switch_criteria' in self.config['test_execution']:
             phase_thresholds = self.config['test_execution']['phase_switch_criteria']['phase_thresholds']
@@ -735,8 +747,9 @@ class AdaptiveGroupingTester:
                     
                     # 修复：使用正确的范围检查
                     if min_ratio <= unknown_ratio <= max_ratio:
-                        print(f"  ✅ 匹配策略 {phase_name}: {min_ratio:.1%} <= {unknown_ratio:.1%} <= {max_ratio:.1%}")
-                        return threshold['group_ratio']
+                        strategy_name = threshold.get('strategy_name', f'{phase_name}策略')
+                        print(f"  ✅ 匹配策略 {phase_name} ({strategy_name}): {min_ratio:.1%} <= {unknown_ratio:.1%} <= {max_ratio:.1%}")
+                        return threshold['group_ratio'], strategy_name
                     else:
                         print(f"  ❌ 不匹配策略 {phase_name}: {min_ratio:.1%} <= {unknown_ratio:.1%} <= {max_ratio:.1%}")
             
@@ -746,22 +759,23 @@ class AdaptiveGroupingTester:
                 min_ratio = threshold['min_unknown_ratio']
                 max_ratio = threshold['max_unknown_ratio']
                 if min_ratio <= unknown_ratio <= max_ratio:
-                    print(f"  ✅ 匹配二分法策略: {min_ratio:.1%} <= {unknown_ratio:.1%} <= {max_ratio:.1%}")
-                    return 0.0
+                    strategy_name = threshold.get('strategy_name', '二分法策略')
+                    print(f"  ✅ 匹配二分法策略 ({strategy_name}): {min_ratio:.1%} <= {unknown_ratio:.1%} <= {max_ratio:.1%}")
+                    return 0.0, strategy_name
             
             # 如果都不匹配，使用二分法
             print(f"  ⚠️  没有匹配的策略，使用二分法")
-            return 0.0
+            return 0.0, "二分法策略"
         else:
             # 使用默认的硬编码阈值
             if unknown_ratio >= 0.5:  # 50%以上
-                return 0.5
+                return 0.5, "50%集群策略"
             elif unknown_ratio >= 0.3:  # 30%-50%
-                return 0.3
+                return 0.3, "30%集群策略"
             elif unknown_ratio >= 0.1:  # 10%-30%
-                return 0.1
+                return 0.1, "10%集群策略"
             else:  # 10%以下
-                return 0.0
+                return 0.0, "二分法策略"
     
     def create_point_clusters(self) -> List[List[int]]:
         """创建点位集群 - 按比例切割为不相交的集群，使用随机分组策略"""
@@ -985,7 +999,7 @@ class AdaptiveGroupingTester:
         
         print(f"📝 已记录分组历史，当前历史记录数: {len(self.group_history)}")
     
-    def test_cluster_internally(self, cluster: List[int], cluster_id: int) -> int:
+    def test_cluster_internally(self, cluster: List[int], cluster_id: int, strategy_name: str = None) -> int:
         """在集群内部进行测试 - 每个点位轮流作为通电点位"""
         print(f"\n🔬 开始测试集群 {cluster_id + 1}")
         print(f"集群点位: {cluster}")
@@ -1018,7 +1032,7 @@ class AdaptiveGroupingTester:
                 print(f"🔌 继电器操作次数: {relay_operations}")
                 
                 # 运行测试
-                test_result = self.run_single_test(other_points, power_source)
+                test_result = self.run_single_test(other_points, power_source, strategy_name)
                 
                 if test_result:
                     test_duration = time.time() - test_start_time
@@ -1121,6 +1135,9 @@ class AdaptiveGroupingTester:
             print(f"\n🔍 检测到二分法策略，切换到二分法测试")
             return self.run_binary_search_testing(max_tests)
         
+        # 获取当前策略名称
+        current_strategy_name = self.get_current_strategy_name()
+        
         print(f"\n🚀 开始运行阶段 {self.current_phase} 测试")
         print(f"目标测试次数: {max_tests}")
         print(f"当前分组比例: {current_ratio:.1%}")
@@ -1152,7 +1169,7 @@ class AdaptiveGroupingTester:
             print(f"集群大小: {len(cluster)}")
             
             # 测试集群内部 - 确保完成整个集群的所有测试
-            cluster_tests = self.test_cluster_internally(cluster, cluster_id)
+            cluster_tests = self.test_cluster_internally(cluster, cluster_id, current_strategy_name)
             tests_run += cluster_tests
             
             print(f"✅ 集群 {cluster_id + 1} 测试完成，运行测试: {cluster_tests} 次")
@@ -1242,7 +1259,7 @@ class AdaptiveGroupingTester:
             try:
                 # 测试点位1作为电源，点位2作为测试点
                 test_start_time = time.time()
-                test_result = self.run_single_test([point2], point1)
+                test_result = self.run_single_test([point2], point1, "二分法策略")
                 
                 if test_result:
                     test_duration = time.time() - test_start_time
@@ -1307,7 +1324,7 @@ class AdaptiveGroupingTester:
                             print(f"🔄 尝试反向测试: {point2} -> {point1}")
                             
                             reverse_test_start = time.time()
-                            reverse_result = self.run_single_test([point1], point2)
+                            reverse_result = self.run_single_test([point1], point2, "二分法策略")
                             
                             if reverse_result:
                                 reverse_duration = time.time() - reverse_test_start

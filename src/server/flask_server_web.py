@@ -79,8 +79,11 @@ class WebFlaskTestServer:
         # 更新所有点位状态 - 确保统计准确
         self._update_current_states()
         
-        # 确定当前使用的策略
-        strategy = self._determine_test_strategy(test_result)
+        # 确定当前使用的策略 - 优先使用test_result中的策略名称
+        if hasattr(test_result, 'strategy') and test_result.strategy:
+            strategy = test_result.strategy
+        else:
+            strategy = self._determine_test_strategy(test_result)
         
         # 添加到测试历史
         test_record = {

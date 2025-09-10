@@ -267,6 +267,15 @@ TEST_FRONTEND_HTML = """
         .btn-danger:hover:not(:disabled) {
             background: #c82333;
         }
+        
+        .btn-info {
+            background: #17a2b8;
+            color: white;
+        }
+        
+        .btn-info:hover:not(:disabled) {
+            background: #138496;
+        }
     </style>
 </head>
 <body>
@@ -328,6 +337,9 @@ TEST_FRONTEND_HTML = """
                     </button>
                     <button type="button" id="removeStrategyBtn" class="btn btn-danger" onclick="removeStrategy()" disabled>
                         ➖ 删除策略
+                    </button>
+                    <button type="button" id="adjustRangesBtn" class="btn btn-info" onclick="adjustRanges()">
+                        🔧 重新调整范围
                     </button>
                 </div>
                 
@@ -452,32 +464,32 @@ TEST_FRONTEND_HTML = """
                 {
                     id: 'strategy_1',
                     name: '50%集群策略',
-                    minRatio: 10,
-                    maxRatio: 100,
+                    minRatio: 0, // 终止比例，会被adjustStrategyRanges重新计算
+                    maxRatio: 100, // 开始比例，固定为100%
                     clusterRatio: 50,
                     type: 'cluster'
                 },
                 {
                     id: 'strategy_2',
                     name: '30%集群策略',
-                    minRatio: 10,
-                    maxRatio: 100,
+                    minRatio: 0, // 终止比例，会被adjustStrategyRanges重新计算
+                    maxRatio: 0, // 开始比例，会被adjustStrategyRanges重新计算
                     clusterRatio: 30,
                     type: 'cluster'
                 },
                 {
                     id: 'strategy_3',
                     name: '10%集群策略',
-                    minRatio: 10,
-                    maxRatio: 100,
+                    minRatio: 0, // 终止比例，会被adjustStrategyRanges重新计算
+                    maxRatio: 0, // 开始比例，会被adjustStrategyRanges重新计算
                     clusterRatio: 10,
                     type: 'cluster'
                 },
                 {
                     id: 'strategy_4',
                     name: '二分法策略',
-                    minRatio: 0,
-                    maxRatio: 10,
+                    minRatio: 0, // 终止比例，固定为0%
+                    maxRatio: 0, // 开始比例，会被adjustStrategyRanges重新计算
                     clusterRatio: 0,
                     type: 'binary_search'
                 }
@@ -503,13 +515,16 @@ TEST_FRONTEND_HTML = """
                 
                 strategyDiv.innerHTML = `
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                        <h4>${strategy.name}</h4>
+                        <input type="text" id="${strategy.id}_name" value="${strategy.name}" onchange="updateStrategy('${strategy.id}')" style="font-size: 16px; font-weight: bold; border: 1px solid #ddd; padding: 5px; border-radius: 4px; width: 200px;">
                         ${!isLast ? `<button type="button" class="btn btn-sm btn-outline-danger" onclick="removeSpecificStrategy('${strategy.id}')" style="padding: 4px 8px; font-size: 12px;">删除</button>` : ''}
                     </div>
                     <div class="form-group">
-                        <label>未知关系比例范围:</label>
-                        <input type="number" id="${strategy.id}_min" value="${strategy.minRatio}" min="0" max="100" step="1" onchange="updateStrategy('${strategy.id}')">% - 
+                        <label>开始比例:</label>
                         <input type="number" id="${strategy.id}_max" value="${strategy.maxRatio}" min="0" max="100" step="1" onchange="updateStrategy('${strategy.id}')">%
+                    </div>
+                    <div class="form-group">
+                        <label>终止比例:</label>
+                        <input type="number" id="${strategy.id}_min" value="${strategy.minRatio}" min="0" max="100" step="1" onchange="updateStrategy('${strategy.id}')">%
                     </div>
                     ${!isBinary ? `
                         <div class="form-group">
@@ -558,10 +573,8 @@ TEST_FRONTEND_HTML = """
             const binaryIndex = strategies.findIndex(s => s.type === 'binary_search');
             strategies.splice(binaryIndex, 0, newStrategy);
             
-            // 更新二分法策略的最小比例
-            const binaryStrategy = strategies.find(s => s.type === 'binary_search');
-            binaryStrategy.minRatio = newStrategy.maxRatio;
-            
+            // 重新调整所有策略的范围
+            adjustStrategyRanges(true);
             renderStrategies();
         }
         
@@ -577,13 +590,8 @@ TEST_FRONTEND_HTML = """
             if (lastClusterIndex >= 0) {
                 strategies.splice(lastClusterIndex, 1);
                 
-                // 更新二分法策略的最小比例
-                const binaryStrategy = strategies.find(s => s.type === 'binary_search');
-                const newLastCluster = strategies[lastClusterIndex - 1];
-                if (newLastCluster) {
-                    binaryStrategy.minRatio = newLastCluster.maxRatio;
-                }
-                
+                // 重新调整所有策略的范围
+                adjustStrategyRanges(true);
                 renderStrategies();
             }
         }
@@ -600,34 +608,65 @@ TEST_FRONTEND_HTML = """
                 strategies.splice(index, 1);
                 
                 // 重新调整比例范围
-                adjustStrategyRanges();
+                adjustStrategyRanges(true);
                 renderStrategies();
             }
         }
         
-        // 调整策略范围
-        function adjustStrategyRanges() {
+        // 调整策略范围 - 只在初始化时自动调整，允许用户手动修改
+        function adjustStrategyRanges(forceAdjust = false) {
+            // 如果用户手动修改了范围，不自动调整
+            if (!forceAdjust && hasManualAdjustments()) {
+                return;
+            }
+            
             // 找到二分法策略
             const binaryStrategy = strategies.find(s => s.type === 'binary_search');
             const clusterStrategies = strategies.filter(s => s.type !== 'binary_search');
             
             if (binaryStrategy && clusterStrategies.length > 0) {
-                // 设置二分法策略的范围为 0% - 10%
-                binaryStrategy.minRatio = 0;
-                binaryStrategy.maxRatio = 10;
-                
-                // 设置其他策略的范围，以10%为基底
-                const totalRange = 100 - 10; // 90%的范围给集群策略
-                const rangePerStrategy = totalRange / clusterStrategies.length;
-                
-                for (let i = 0; i < clusterStrategies.length; i++) {
-                    const strategy = clusterStrategies[i];
-                    strategy.minRatio = 10 + (i * rangePerStrategy);
-                    strategy.maxRatio = 10 + ((i + 1) * rangePerStrategy);
+                // 设置第一个策略的开始比例为100%
+                if (clusterStrategies.length > 0) {
+                    clusterStrategies[0].maxRatio = 100; // 开始比例（从高到低）
                 }
                 
-                // 确保最后一个集群策略的最大值是100%
-                clusterStrategies[clusterStrategies.length - 1].maxRatio = 100;
+                // 设置其他策略的范围，确保开始比例 = 前一个策略的终止比例
+                for (let i = 0; i < clusterStrategies.length; i++) {
+                    const strategy = clusterStrategies[i];
+                    
+                    if (i === 0) {
+                        // 第一个策略：开始比例100%，终止比例需要计算
+                        strategy.maxRatio = 100;
+                        // 终止比例 = 100% - (100% - 10%) / 集群策略数量
+                        const totalRange = 100 - 10; // 90%的范围给集群策略
+                        const rangePerStrategy = totalRange / clusterStrategies.length;
+                        strategy.minRatio = 100 - rangePerStrategy;
+                    } else {
+                        // 其他策略：开始比例 = 前一个策略的终止比例
+                        const prevStrategy = clusterStrategies[i - 1];
+                        strategy.maxRatio = prevStrategy.minRatio;
+                        // 终止比例 = 开始比例 - 平均范围
+                        const totalRange = 100 - 10;
+                        const rangePerStrategy = totalRange / clusterStrategies.length;
+                        strategy.minRatio = strategy.maxRatio - rangePerStrategy;
+                    }
+                }
+                
+                // 设置二分法策略：开始比例 = 最后一个集群策略的终止比例，终止比例 = 0%
+                // 只有在强制调整或二分法策略范围未手动修改时才调整
+                const lastClusterStrategy = clusterStrategies[clusterStrategies.length - 1];
+                const binaryMinInput = document.getElementById(`${binaryStrategy.id}_min`);
+                const binaryMaxInput = document.getElementById(`${binaryStrategy.id}_max`);
+                
+                // 检查二分法策略是否被手动修改过
+                const isBinaryManuallyModified = binaryMinInput && binaryMaxInput && 
+                    (parseInt(binaryMinInput.value) !== binaryStrategy.minRatio || 
+                     parseInt(binaryMaxInput.value) !== binaryStrategy.maxRatio);
+                
+                if (!isBinaryManuallyModified) {
+                    binaryStrategy.maxRatio = lastClusterStrategy.minRatio; // 开始比例
+                    binaryStrategy.minRatio = 0; // 终止比例
+                }
             } else {
                 // 如果没有二分法策略，使用原来的逻辑
                 for (let i = 0; i < strategies.length - 1; i++) {
@@ -638,24 +677,46 @@ TEST_FRONTEND_HTML = """
             }
         }
         
+        // 检查是否有手动调整
+        function hasManualAdjustments() {
+            // 检查是否有策略被手动修改过
+            for (let strategy of strategies) {
+                const minInput = document.getElementById(`${strategy.id}_min`);
+                const maxInput = document.getElementById(`${strategy.id}_max`);
+                if (minInput && maxInput) {
+                    const currentMin = parseInt(minInput.value);
+                    const currentMax = parseInt(maxInput.value);
+                    if (currentMin !== strategy.minRatio || currentMax !== strategy.maxRatio) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+        
         // 更新策略
         function updateStrategy(strategyId) {
             const strategy = strategies.find(s => s.id === strategyId);
             if (!strategy) return;
             
+            const nameInput = document.getElementById(`${strategyId}_name`);
             const minInput = document.getElementById(`${strategyId}_min`);
             const maxInput = document.getElementById(`${strategyId}_max`);
             const clusterInput = document.getElementById(`${strategyId}_cluster`);
             const typeSelect = document.getElementById(`${strategyId}_type`);
             
+            if (nameInput) strategy.name = nameInput.value;
             if (minInput) strategy.minRatio = parseInt(minInput.value);
             if (maxInput) strategy.maxRatio = parseInt(maxInput.value);
             if (clusterInput) strategy.clusterRatio = parseInt(clusterInput.value);
             if (typeSelect) strategy.type = typeSelect.value;
             
-            // 自动调整相邻策略的范围
-            adjustStrategyRanges();
-            renderStrategies();
+            // 不再自动调整范围，允许用户手动修改
+            // adjustStrategyRanges();
+            // renderStrategies();
+            
+            // 只更新配置显示
+            updateConfigDisplay();
         }
         
         // 更新删除按钮状态
@@ -663,6 +724,15 @@ TEST_FRONTEND_HTML = """
             const removeBtn = document.getElementById('removeStrategyBtn');
             const clusterStrategies = strategies.filter(s => s.type !== 'binary_search');
             removeBtn.disabled = clusterStrategies.length <= 1;
+        }
+        
+        // 重新调整范围
+        function adjustRanges() {
+            if (confirm('确定要重新调整所有策略的范围吗？这将覆盖您的手动修改。')) {
+                adjustStrategyRanges(true); // 强制调整
+                renderStrategies();
+                updateConfigDisplay();
+            }
         }
         
         // 加载预设配置
@@ -677,26 +747,26 @@ TEST_FRONTEND_HTML = """
             if (preset === 'balanced') {
                 // 平衡策略
                 strategies = [
-                    { id: 'strategy_1', name: '50%集群策略', minRatio: 10, maxRatio: 100, clusterRatio: 50, type: 'cluster' },
-                    { id: 'strategy_2', name: '30%集群策略', minRatio: 10, maxRatio: 100, clusterRatio: 30, type: 'cluster' },
-                    { id: 'strategy_3', name: '10%集群策略', minRatio: 10, maxRatio: 100, clusterRatio: 10, type: 'cluster' },
-                    { id: 'strategy_4', name: '二分法策略', minRatio: 0, maxRatio: 10, clusterRatio: 0, type: 'binary_search' }
+                    { id: 'strategy_1', name: '50%集群策略', minRatio: 0, maxRatio: 100, clusterRatio: 50, type: 'cluster' },
+                    { id: 'strategy_2', name: '30%集群策略', minRatio: 0, maxRatio: 0, clusterRatio: 30, type: 'cluster' },
+                    { id: 'strategy_3', name: '10%集群策略', minRatio: 0, maxRatio: 0, clusterRatio: 10, type: 'cluster' },
+                    { id: 'strategy_4', name: '二分法策略', minRatio: 0, maxRatio: 0, clusterRatio: 0, type: 'binary_search' }
                 ];
             } else if (preset === 'aggressive') {
                 // 激进策略
                 strategies = [
-                    { id: 'strategy_1', name: '60%集群策略', minRatio: 10, maxRatio: 100, clusterRatio: 60, type: 'cluster' },
-                    { id: 'strategy_2', name: '40%集群策略', minRatio: 10, maxRatio: 100, clusterRatio: 40, type: 'cluster' },
-                    { id: 'strategy_3', name: '20%集群策略', minRatio: 10, maxRatio: 100, clusterRatio: 20, type: 'cluster' },
-                    { id: 'strategy_4', name: '二分法策略', minRatio: 0, maxRatio: 10, clusterRatio: 0, type: 'binary_search' }
+                    { id: 'strategy_1', name: '60%集群策略', minRatio: 0, maxRatio: 100, clusterRatio: 60, type: 'cluster' },
+                    { id: 'strategy_2', name: '40%集群策略', minRatio: 0, maxRatio: 0, clusterRatio: 40, type: 'cluster' },
+                    { id: 'strategy_3', name: '20%集群策略', minRatio: 0, maxRatio: 0, clusterRatio: 20, type: 'cluster' },
+                    { id: 'strategy_4', name: '二分法策略', minRatio: 0, maxRatio: 0, clusterRatio: 0, type: 'binary_search' }
                 ];
             } else if (preset === 'conservative') {
                 // 保守策略
                 strategies = [
-                    { id: 'strategy_1', name: '40%集群策略', minRatio: 10, maxRatio: 100, clusterRatio: 40, type: 'cluster' },
-                    { id: 'strategy_2', name: '20%集群策略', minRatio: 10, maxRatio: 100, clusterRatio: 20, type: 'cluster' },
-                    { id: 'strategy_3', name: '10%集群策略', minRatio: 10, maxRatio: 100, clusterRatio: 10, type: 'cluster' },
-                    { id: 'strategy_4', name: '二分法策略', minRatio: 0, maxRatio: 10, clusterRatio: 0, type: 'binary_search' }
+                    { id: 'strategy_1', name: '40%集群策略', minRatio: 0, maxRatio: 100, clusterRatio: 40, type: 'cluster' },
+                    { id: 'strategy_2', name: '20%集群策略', minRatio: 0, maxRatio: 0, clusterRatio: 20, type: 'cluster' },
+                    { id: 'strategy_3', name: '10%集群策略', minRatio: 0, maxRatio: 0, clusterRatio: 10, type: 'cluster' },
+                    { id: 'strategy_4', name: '二分法策略', minRatio: 0, maxRatio: 0, clusterRatio: 0, type: 'binary_search' }
                 ];
             }
             
@@ -766,7 +836,8 @@ TEST_FRONTEND_HTML = """
                     min_unknown_ratio: strategy.minRatio / 100,
                     max_unknown_ratio: strategy.maxRatio / 100,
                     group_ratio: strategy.type === 'binary_search' ? 0 : strategy.clusterRatio / 100,
-                    strategy_type: strategy.type
+                    strategy_type: strategy.type,
+                    strategy_name: strategy.name // 添加策略名称
                 };
                 
                 if (strategy.type !== 'binary_search') {
