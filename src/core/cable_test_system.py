@@ -1599,13 +1599,22 @@ class RelayStateManager:
                 return 0
             
             # 特殊处理：如果只是电源点位和测试点位的交换（电源点位变成测试点位，测试点位变成电源点位）
-            if (len(diff_new) == 1 and len(diff_current) == 1 and 
-                list(diff_new)[0] in current_relay_states and 
-                list(diff_current)[0] in new_relay_states):
-                print(f"🔌 电源点位和测试点位交换，继电器状态基本相同，返回0")
-                # 更新激活点位集合
-                self.active_test_points = set(test_points)
-                return 0
+            if (len(diff_new) == 1 and len(diff_current) == 1):
+                # 检查是否只是电源点位和测试点位的交换
+                # 新增的点位在原来的状态中，减少的点位在新的状态中
+                new_point = list(diff_new)[0]
+                current_point = list(diff_current)[0]
+                
+                if (new_point in current_relay_states and current_point in new_relay_states):
+                    print(f"🔌 电源点位和测试点位交换，继电器状态基本相同，返回0")
+                    print(f"  交换详情: {current_point} -> {new_point}")
+                    # 更新激活点位集合
+                    self.active_test_points = set(test_points)
+                    return 0
+                else:
+                    print(f"🔌 不是简单的电源点位和测试点位交换")
+                    print(f"  新增点位 {new_point} 在原来状态中: {new_point in current_relay_states}")
+                    print(f"  减少点位 {current_point} 在新状态中: {current_point in new_relay_states}")
         
 
         
