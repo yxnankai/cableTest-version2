@@ -243,24 +243,30 @@ class WebFlaskTestServer:
             
             # 构建进度数据
             progress_data = []
-            current_known_relations = 0
+            
+            # 获取每轮实验后确认的关系总数历史记录
+            relations_history = self.test_system.relations_history
             
             for i, test_result in enumerate(test_history):
-                # 计算当前测试后的已知关系数量
-                # 这里需要根据测试结果更新已知关系数量
-                # 由于每次测试可能发现多个关系，我们需要累加
-                
                 # 获取当前测试发现的连接数量
                 connections_found = len(test_result.detected_connections)
-                current_known_relations += connections_found
                 
                 # 确定当前使用的策略
-                # 这里需要根据测试的特征来判断策略
                 strategy = self._determine_test_strategy(test_result)
+                
+                # 使用relations_history中对应轮次的关系总数
+                # 如果relations_history长度不够，使用当前总数作为后备
+                if i < len(relations_history):
+                    confirmed_relations_at_round = relations_history[i]
+                else:
+                    # 后备方案：使用当前系统总数
+                    current_conductive_count = self.test_system.get_detected_conductive_count()
+                    current_non_conductive_count = self.test_system.get_confirmed_non_conductive_count()
+                    confirmed_relations_at_round = current_conductive_count + current_non_conductive_count
                 
                 progress_data.append({
                     'test_id': i + 1,
-                    'known_relations': current_known_relations,
+                    'known_relations': confirmed_relations_at_round,  # 显示各轮结束后的已确认关系总数
                     'strategy': strategy,
                     'timestamp': test_result.timestamp if hasattr(test_result, 'timestamp') else time.time(),
                     'connections_found': connections_found,
@@ -590,7 +596,6 @@ HTML_TEMPLATE = """
             .dashboard { grid-template-columns: 1fr; }
             .status-grid { grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); }
         }
-        }
     </style>
 </head>
 <body>
@@ -689,8 +694,9 @@ HTML_TEMPLATE = """
         
         <div class="card">
             <h3>📈 实验进度图表</h3>
-            <div id="progressChart" style="height: 400px; width: 100%;">
-                <div class="loading">加载中...</div>
+            <div style="position: relative; height: 400px; width: 100%;">
+                <canvas id="progressChart" style="height: 400px; width: 100%;"></canvas>
+                <div id="chartLoading" class="loading" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">加载中...</div>
             </div>
             <div style="margin-top: 10px; text-align: center;">
                 <button class="btn" onclick="refreshProgressChart()" style="background: #4CAF50; padding: 8px 16px; font-size: 14px;">
@@ -711,6 +717,9 @@ HTML_TEMPLATE = """
     </div>
 
     <script>
+        // 版本标识符 - 确保浏览器加载最新代码
+        console.log('页面版本: 2025-09-10-v2');
+        
         // const socket = io();  // 暂时禁用WebSocket
         let lastUpdate = 0;
         let fallbackIntervalId = null; // 轮询模式定时器ID
@@ -1032,30 +1041,67 @@ HTML_TEMPLATE = """
         
         // 更新进度图表
         async function updateProgressChart() {
+            const ctx = document.getElementById('progressChart');
+            const loadingDiv = document.getElementById('chartLoading');
+            
+            if (!ctx) {
+                console.error('找不到图表容器');
+                return;
+            }
+            
             try {
+                // 显示加载状态
+                if (loadingDiv) {
+                    loadingDiv.style.display = 'block';
+                }
+                ctx.style.display = 'none';
+                
                 const response = await fetch('/api/test/progress');
                 const data = await response.json();
                 
-                if (data.success && data.data) {
+                console.log('进度图表API响应:', data);
+                
+                if (data.success && data.data && Array.isArray(data.data)) {
                     chartData = data.data;
                     
                     // 准备图表数据
                     const labels = chartData.map((item, index) => index + 1);
-                    const values = chartData.map(item => item.known_relations);
+                    const values = chartData.map(item => item.known_relations || 0);
+                    
+                    console.log('图表数据准备完成:', { labels, values });
                     
                     // 更新图表
                     if (progressChart) {
                         progressChart.data.labels = labels;
                         progressChart.data.datasets[0].data = values;
                         progressChart.update();
-                        
                         console.log(`图表更新完成，数据点: ${chartData.length}`);
+                    } else {
+                        console.error('图表对象不存在，需要重新初始化');
+                        initProgressChart();
+                        if (progressChart) {
+                            progressChart.data.labels = labels;
+                            progressChart.data.datasets[0].data = values;
+                            progressChart.update();
+                        }
                     }
+                    
+                    // 隐藏加载状态，显示图表
+                    if (loadingDiv) {
+                        loadingDiv.style.display = 'none';
+                    }
+                    ctx.style.display = 'block';
                 } else {
-                    console.warn('获取进度数据失败:', data.error || '未知错误');
+                    console.warn('获取进度数据失败:', data.error || '数据格式错误');
+                    if (loadingDiv) {
+                        loadingDiv.innerHTML = '<p style="color: red;">加载图表数据失败</p>';
+                    }
                 }
             } catch (error) {
                 console.error('更新进度图表失败:', error);
+                if (loadingDiv) {
+                    loadingDiv.innerHTML = '<p style="color: red;">加载图表数据失败</p>';
+                }
             }
         }
         
@@ -1071,28 +1117,37 @@ HTML_TEMPLATE = """
                 return;
             }
             
-            const csvContent = [
-                ['实验序号', '已知关系数量', '策略', '时间戳'],
-                ...chartData.map((item, index) => [
-                    index + 1,
-                    item.known_relations,
-                    getStrategyName(item.strategy),
-                    new Date(item.timestamp * 1000).toLocaleString('zh-CN')
-                ])
-            ].map(row => row.join(',')).join('\n');
+            var header = '实验序号,已知关系数量,策略,时间戳';
+            var lines = [header];
             
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            const url = URL.createObjectURL(blob);
+            for (var i = 0; i < chartData.length; i++) {
+                var item = chartData[i];
+                var rowNumber = i + 1;
+                var knownRelations = item.known_relations;
+                var strategy = getStrategyName(item.strategy);
+                var timestamp = new Date(item.timestamp * 1000).toLocaleString('zh-CN');
+                
+                var line = rowNumber + ',' + knownRelations + ',' + strategy + ',' + timestamp;
+                lines.push(line);
+            }
+            
+            var csvText = lines.join(String.fromCharCode(10));
+            var blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
+            var link = document.createElement('a');
+            var url = URL.createObjectURL(blob);
             link.setAttribute('href', url);
-            link.setAttribute('download', `实验进度数据_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.csv`);
+            
+            var now = new Date();
+            var dateStr = now.toISOString().slice(0, 19).replace(/:/g, '-');
+            var fileName = '实验进度数据_' + dateStr + '.csv';
+            link.setAttribute('download', fileName);
             link.style.visibility = 'hidden';
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
         }
         
-                 // 更新系统信息
+        // 更新系统信息
         function updateSystemInfo(data) {
             console.log('更新系统信息:', data);
             
@@ -1129,7 +1184,7 @@ HTML_TEMPLATE = """
             }
         }
         
-                 // 更新点对关系信息
+        // 更新点对关系信息
         function updateClusterInfo(clusters) {
             console.log('更新集群信息:', clusters);
             
@@ -1156,7 +1211,7 @@ HTML_TEMPLATE = """
             console.log('集群信息更新完成');
         }
         
-                 // 更新点位状态
+        // 更新点位状态
         function updatePointStatus(pointStates) {
             console.log('更新点位状态:', pointStates);
             
@@ -1186,52 +1241,48 @@ HTML_TEMPLATE = """
                 <div style="margin-bottom: 15px;">
                     <strong>状态详情:</strong> 已加载 ${totalPoints} 个点位的状态信息
                 </div>
+                <div class="status-grid">
+                    ${Object.entries(pointStates).slice(0, 100).map(([id, state]) => `
+                        <div class="status-item ${state === 1 ? 'status-on' : 'status-off'}" 
+                             style="cursor: pointer;" 
+                             title="点位 ${id} - 点击查看导通关系" 
+                             onclick="showPointRelationships(${id})">
+                            ${id}
+                        </div>
+                    `).join('')}
+                </div>
+                ${totalPoints > 100 ? `<p style="text-align: center; color: #666; margin-top: 10px;">显示前100个点位，共${totalPoints}个</p>` : ''}
             `;
             console.log('点位状态更新完成');
         }
-                     } else {
-                         // 如果获取连接组信息失败，使用原来的显示方式
-                         showOriginalPointStatus();
-                     }
-                 })
-                 .catch(error => {
-                     console.error('获取连接组可视化数据失败:', error);
-                     // 使用原来的显示方式
-                     showOriginalPointStatus();
-                 });
-             
-             // 显示原始点位状态的函数
-             function showOriginalPointStatus() {
-                 container.innerHTML = `
-                     <div style="margin-bottom: 15px;">
-                         <strong>总点位:</strong> ${totalPoints.toLocaleString()} | 
-                         <span style="color: #4CAF50;"><strong>开启:</strong> ${onPoints}</span> | 
-                         <span style="color: #f44336;"><strong>关闭:</strong> ${offPoints}</span>
-                     </div>
-                     <div class="status-grid">
-                         ${Object.entries(pointStates).slice(0, 100).map(([id, state]) => `
-                             <div class="status-item ${state === 1 ? 'status-on' : 'status-off'}" 
-                                  style="cursor: pointer;" 
-                                  title="点位 ${id} - 点击查看导通关系" 
-                                  onclick="showPointRelationships(${id})">
-                                 ${id}
-                             </div>
-                         `).join('')}
-                     </div>
-                     ${totalPoints > 100 ? `<p style="text-align: center; color: #666; margin-top: 10px;">显示前100个点位，共${totalPoints}个</p>` : ''}
-                 `;
-             }
-         }
         
         // 渲染测试历史（单页）
         function renderHistoryItems(items) {
+             console.log('renderHistoryItems 被调用，数据:', items);
              if (items && items.length > 0) {
                  const historyHtml = items.map(test => {
+                     console.log('处理测试记录:', test);
                      const date = new Date(test.timestamp * 1000);
                      const timeStr = date.toLocaleString('zh-CN');
-                     const testPoints = test.test_points && test.test_points.length > 0 
-                         ? test.test_points.join(', ') 
+                     
+                     // 调试：检查字段
+                     console.log('active_points:', test.active_points);
+                     console.log('test_duration:', test.test_duration);
+                     console.log('detected_connections:', test.detected_connections);
+                     
+                     const testPoints = test.active_points && test.active_points.length > 0 
+                         ? test.active_points.join(', ') 
                          : '无';
+                     
+                     // 计算连接状态
+                     const connectionsCount = test.detected_connections ? test.detected_connections.length : 0;
+                     const hasConnections = connectionsCount > 0;
+                     
+                     // 计算耗时（使用test_duration字段）
+                     const duration = test.test_duration || 0;
+                     const durationStr = duration > 0 ? `${(duration * 1000).toFixed(3)}s` : '0.000s';
+                     
+                     console.log('计算结果 - testPoints:', testPoints, 'durationStr:', durationStr);
                      
                      return `
                          <div class="test-record">
@@ -1241,17 +1292,18 @@ HTML_TEMPLATE = """
                              </div>
                              <div class="test-details">
                                  <div><strong>电源点位:</strong> ${test.power_source}</div>
-                                 <div><strong>测试点位:</strong> ${testPoints}</div>
                                  <div><strong>继电器操作:</strong> ${test.relay_operations || 0}</div>
+                                 <div><strong>连接状态:</strong> <span class="${hasConnections ? 'connected' : 'disconnected'}">${hasConnections ? '已连接' : '未连接'}</span></div>
+                                 <div><strong>测试点位:</strong> ${testPoints}</div>
                                  <div><strong>通电次数:</strong> ${test.power_on_operations || 0}</div>
-                                 <div><strong>连接状态:</strong> <span class="${test.connections_found > 0 ? 'connected' : 'disconnected'}">${test.connections_found > 0 ? '已连接' : '未连接'}</span></div>
-                                 <div><strong>耗时:</strong> ${(test.duration * 1000).toFixed(3)}s</div>
+                                 <div><strong>耗时:</strong> ${durationStr}</div>
                              </div>
                          </div>
                      `;
                  }).join('');
                  
                  document.getElementById('testHistory').innerHTML = historyHtml + '<div id="historyPager"></div>';
+                 console.log('测试历史渲染完成');
              } else {
                  document.getElementById('testHistory').innerHTML = '<div class="no-data">暂无测试历史</div>';
              }
@@ -1805,7 +1857,8 @@ HTML_TEMPLATE = """
             loadInitialData();
             // 若短时间内仍未建立WS连接，启用兜底轮询
             setTimeout(() => {
-                if (!socket.connected && !fallbackIntervalId) {
+                // 由于WebSocket被禁用，直接启用兜底轮询
+                if (!fallbackIntervalId) {
                     startFallbackPolling();
                 }
             }, 1000);

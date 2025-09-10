@@ -80,6 +80,10 @@ class CableTestSystem:
         self.true_pairs: Set[Tuple[int, int]] = set()
         self.test_history = []
         
+        # 每轮实验后确认的关系总数历史记录
+        # 存储每轮实验后的导通关系 + 不导通关系总数
+        self.relations_history = []
+        
         # 兼容旧版本，但主要使用relay_manager
         self.relay_operation_count = 0  # 继电器操作总次数
         self.power_on_count = 0         # 通电（ON切换）总次数
@@ -482,7 +486,9 @@ class CableTestSystem:
         self._update_relationship_matrix(power_source, test_points, detected_connections)
         
         # 6. 记录测试历史
-        test_id = f"test_{int(time.time())}_{int((time.time() % 1) * 1000)}"
+        # 使用测试历史长度 + 1 作为测试序号
+        test_sequence = len(self.test_history) + 1
+        test_id = f"test_{test_sequence}"
         
         # 🔧 重要：每次实验，通电次数固定为1，表示从通电点位进行通电
         power_on_operations = 1
@@ -506,8 +512,18 @@ class CableTestSystem:
         
         self.test_history.append(test_result)
         
+        # 更新每轮实验后确认的关系总数历史记录
+        # 计算当前已确认的导通关系 + 不导通关系总数
+        current_conductive_count = self.get_detected_conductive_count()
+        current_non_conductive_count = self.get_confirmed_non_conductive_count()
+        total_confirmed_relations = current_conductive_count + current_non_conductive_count
+        
+        # 添加到关系历史记录中
+        self.relations_history.append(total_confirmed_relations)
+        
         logger.info(f"测试完成: 电源点{power_source} -> {len(test_points)}个测试点")
         logger.info(f"继电器操作: {relay_operations}次, 检测到连接: {len(detected_connections)}个")
+        logger.info(f"当前已确认关系总数: {total_confirmed_relations} (导通: {current_conductive_count}, 不导通: {current_non_conductive_count})")
         
         return test_result
     

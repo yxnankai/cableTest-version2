@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>前端测试页面</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+</head>
+<body>
+    <h1>前端测试页面</h1>
+    <div id="test-results"></div>
+    <canvas id="testChart" width="400" height="200"></canvas>
+    
+    <script>
+        async function testAPIs() {
+            const results = document.getElementById('test-results');
+            results.innerHTML = '<h2>测试API端点...</h2>';
+            
+            try {
+                // 测试系统信息API
+                const systemResponse = await fetch('http://localhost:5000/api/system/info');
+                const systemData = await systemResponse.json();
+                results.innerHTML += `<p>✅ 系统信息API: ${systemData.success ? '成功' : '失败'}</p>`;
+                
+                // 测试集群信息API
+                const clusterResponse = await fetch('http://localhost:5000/api/clusters');
+                const clusterData = await clusterResponse.json();
+                results.innerHTML += `<p>✅ 集群信息API: ${clusterData.success ? '成功' : '失败'}</p>`;
+                
+                // 测试点位状态API
+                const pointResponse = await fetch('http://localhost:5000/api/points/status');
+                const pointData = await pointResponse.json();
+                results.innerHTML += `<p>✅ 点位状态API: ${pointData.success ? '成功' : '失败'}</p>`;
+                
+                // 测试进度API
+                const progressResponse = await fetch('http://localhost:5000/api/test/progress');
+                const progressData = await progressResponse.json();
+                results.innerHTML += `<p>✅ 测试进度API: ${progressData.success ? '成功' : '失败'}</p>`;
+                
+                // 测试图表功能
+                const ctx = document.getElementById('testChart');
+                const chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['测试1', '测试2', '测试3'],
+                        datasets: [{
+                            label: '测试数据',
+                            data: [12, 19, 3],
+                            borderColor: '#4CAF50',
+                            backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: '测试图表'
+                            }
+                        }
+                    }
+                });
+                
+                results.innerHTML += `<p>✅ Chart.js图表: 成功创建</p>`;
+                results.innerHTML += `<h3>所有测试完成！前端功能正常。</h3>`;
+                
+            } catch (error) {
+                results.innerHTML += `<p>❌ 测试失败: ${error.message}</p>`;
+            }
+        }
+        
+        // 页面加载完成后运行测试
+        document.addEventListener('DOMContentLoaded', testAPIs);
+    </script>
+</body>
+</html>

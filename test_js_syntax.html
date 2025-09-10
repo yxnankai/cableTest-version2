@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>JavaScript语法测试</title>
+</head>
+<body>
+    <h1>JavaScript语法测试</h1>
+    <div id="result"></div>
+    
+    <script>
+        console.log('开始测试...');
+        
+        // 测试可能有问题的代码
+        var lines = ['测试1', '测试2', '测试3'];
+        var csvText = lines.join('\n');
+        console.log('csvText:', csvText);
+        
+        // 测试模板字符串
+        var totalPoints = 100;
+        var testString = `显示前100个点位，共${totalPoints}个`;
+        console.log('testString:', testString);
+        
+        document.getElementById('result').innerHTML = '✅ JavaScript语法测试通过';
+        console.log('测试完成');
+    </script>
+</body>
+</html>
