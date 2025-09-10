@@ -438,17 +438,14 @@ class CableTestSystem:
         # 2. 激活测试点位（只操作需要改变状态的点位）
         test_points_ops = self.relay_manager.activate_test_points(test_points)
         print(f"  测试点位激活操作: {test_points_ops} 次")
-        relay_operations += test_points_ops
         
-        # 🔧 重要：修复继电器操作次数计算逻辑
-        # 不能简单地因为测试点位激活操作为0就将总操作次数设为0
-        # 需要考虑电源点位切换和测试点位激活的总体效果
-        
+        # 🔧 修复继电器操作次数计算逻辑
+        # 只有在继电器状态真正改变时才计算操作次数
         # 获取当前完整的继电器状态（电源点位 + 测试点位）
         current_full_state = {power_source} | set(test_points)
-        last_full_state = getattr(self.relay_manager, 'last_full_relay_states', set())
+        last_full_state = self.relay_manager.last_full_relay_states
         
-        print(f"🔌 继电器状态完整分析:")
+        print(f"🔌 继电器状态比较:")
         print(f"  上一次完整状态: {sorted(last_full_state)} (共{len(last_full_state)}个)")
         print(f"  本次完整状态: {sorted(current_full_state)} (共{len(current_full_state)}个)")
         
@@ -457,21 +454,14 @@ class CableTestSystem:
             print(f"🔌 继电器完整状态相同，总操作次数设为0")
             relay_operations = 0
         else:
-            # 计算实际需要的操作次数
-            to_close = last_full_state - current_full_state
-            to_open = current_full_state - last_full_state
-            actual_operations = len(to_close) + len(to_open)
-            
-            print(f"🔌 继电器状态变化详情:")
-            print(f"  需要关闭: {sorted(to_close)} (共{len(to_close)}个)")
-            print(f"  需要开启: {sorted(to_open)} (共{len(to_open)}个)")
-            print(f"  实际操作次数: {actual_operations}")
-            
-            # 使用实际计算的操作次数，而不是简单相加
-            relay_operations = actual_operations
+            # 使用继电器管理器计算的操作次数
+            relay_operations = power_source_ops + test_points_ops
+            print(f"🔌 继电器状态不同，使用管理器计算的操作次数")
         
-        print(f"  总继电器操作次数: {relay_operations}")
-        print(f"  继电器操作详情: 电源切换({power_source_ops}) + 测试点位激活({test_points_ops})")
+        print(f"🔌 继电器操作次数计算:")
+        print(f"  电源点位切换操作: {power_source_ops} 次")
+        print(f"  测试点位激活操作: {test_points_ops} 次")
+        print(f"  总继电器操作次数: {relay_operations} 次")
         
         # 3. 模拟继电器切换时间
         if relay_operations > 0:
