@@ -440,28 +440,21 @@ class CableTestSystem:
         print(f"  测试点位激活操作: {test_points_ops} 次")
         
         # 🔧 修复继电器操作次数计算逻辑
-        # 只有在继电器状态真正改变时才计算操作次数
-        # 获取当前完整的继电器状态（电源点位 + 测试点位）
-        current_full_state = {power_source} | set(test_points)
-        last_full_state = self.relay_manager.last_full_relay_states
-        
-        print(f"🔌 继电器状态比较:")
-        print(f"  上一次完整状态: {sorted(last_full_state)} (共{len(last_full_state)}个)")
-        print(f"  本次完整状态: {sorted(current_full_state)} (共{len(current_full_state)}个)")
-        
-        # 如果完整状态相同，操作次数为0
-        if current_full_state == last_full_state:
-            print(f"🔌 继电器完整状态相同，总操作次数设为0")
-            relay_operations = 0
-        else:
-            # 使用继电器管理器计算的操作次数
-            relay_operations = power_source_ops + test_points_ops
-            print(f"🔌 继电器状态不同，使用管理器计算的操作次数")
+        # 直接使用继电器管理器计算的操作次数，因为管理器已经处理了状态比较
+        relay_operations = power_source_ops + test_points_ops
         
         print(f"🔌 继电器操作次数计算:")
         print(f"  电源点位切换操作: {power_source_ops} 次")
         print(f"  测试点位激活操作: {test_points_ops} 次")
         print(f"  总继电器操作次数: {relay_operations} 次")
+        
+        # 调试信息：显示继电器状态比较
+        current_full_state = {power_source} | set(test_points)
+        last_full_state = self.relay_manager.last_full_relay_states
+        print(f"🔌 继电器状态比较调试:")
+        print(f"  上一次完整状态: {sorted(last_full_state)} (共{len(last_full_state)}个)")
+        print(f"  本次完整状态: {sorted(current_full_state)} (共{len(current_full_state)}个)")
+        print(f"  状态是否相同: {current_full_state == last_full_state}")
         
         # 3. 模拟继电器切换时间
         if relay_operations > 0:
@@ -1558,7 +1551,8 @@ class RelayStateManager:
         # 🔧 重要：如果继电器状态完全相同，切换次数为0
         # 🔧 关键修复：使用 last_full_relay_states 来比较，这是上一次测试的完整继电器状态
         if not self.last_full_relay_states:
-            # 第一次测试，没有上一次状态
+            # 第一次测试，没有上一次状态，所有继电器都是关闭状态
+            # 需要打开电源点位和测试点位，所以操作次数应该大于0
             current_relay_states = set()
         else:
             # 使用上一次的完整继电器状态
@@ -1600,6 +1594,15 @@ class RelayStateManager:
             # 如果差异很小（最多1个点位），说明只是电源点位和测试点位的交换
             if len(diff_new) <= 1 and len(diff_current) <= 1:
                 print(f"🔌 只是电源点位和测试点位交换，继电器状态基本相同，返回0")
+                # 更新激活点位集合
+                self.active_test_points = set(test_points)
+                return 0
+            
+            # 特殊处理：如果只是电源点位和测试点位的交换（电源点位变成测试点位，测试点位变成电源点位）
+            if (len(diff_new) == 1 and len(diff_current) == 1 and 
+                list(diff_new)[0] in current_relay_states and 
+                list(diff_current)[0] in new_relay_states):
+                print(f"🔌 电源点位和测试点位交换，继电器状态基本相同，返回0")
                 # 更新激活点位集合
                 self.active_test_points = set(test_points)
                 return 0
