@@ -22,7 +22,9 @@ if __name__ == '__main__':
     print("=" * 50)
     
     try:
-        app.run(host='0.0.0.0', port=5001, debug=True)
+        # 使用高性能waitress服务器替代Flask开发服务器
+        from waitress import serve
+        serve(app, host='127.0.0.1', port=5001, threads=6)
     except KeyboardInterrupt:
         print("\n⚠️  服务器已停止")
     except Exception as e:

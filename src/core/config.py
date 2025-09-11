@@ -11,9 +11,9 @@ class Config:
     """基础配置类"""
     
     # Flask服务端配置
-    FLASK_HOST = os.getenv('FLASK_HOST', '0.0.0.0')
+    FLASK_HOST = os.getenv('FLASK_HOST', '127.0.0.1')
     FLASK_PORT = int(os.getenv('FLASK_PORT', 5000))
-    FLASK_DEBUG = os.getenv('FLASK_DEBUG', 'True').lower() == 'true'
+    FLASK_DEBUG = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
     
     # 测试系统配置
     TOTAL_POINTS = int(os.getenv('TOTAL_POINTS', 100))  # 总测试点位数量 (测试版本使用100个点位)
@@ -73,7 +73,7 @@ class Config:
 
 class DevelopmentConfig(Config):
     """开发环境配置"""
-    FLASK_DEBUG = True
+    FLASK_DEBUG = False
     LOG_LEVEL = 'DEBUG'
     TOTAL_POINTS = 1000  # 开发环境使用较少的点位
 
@@ -85,7 +85,7 @@ class ProductionConfig(Config):
 
 class TestingConfig(Config):
     """测试环境配置"""
-    FLASK_DEBUG = True
+    FLASK_DEBUG = False
     LOG_LEVEL = 'DEBUG'
     TOTAL_POINTS = 100
     DATABASE_URL = 'sqlite:///test.db'

@@ -34,8 +34,9 @@ try:
     print("  - POST /api/relay/reset          - 重置继电器")
     print("\n按 Ctrl+C 停止服务器")
     
-    # 启动服务器
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    # 使用高性能waitress服务器替代Flask开发服务器
+    from waitress import serve
+    serve(app, host='127.0.0.1', port=5000, threads=6)
     
 except ImportError as e:
     print(f"❌ 导入错误: {e}")

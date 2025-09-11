@@ -48,12 +48,9 @@ def main():
         logger.info(f"继电器切换时间: {server.test_system.relay_switch_time} 秒")
         logger.info(f"服务端启动完成，监听端口 {config.FLASK_PORT}")
         
-        # 启动Flask应用
-        app.run(
-            host=config.FLASK_HOST,
-            port=config.FLASK_PORT,
-            debug=config.FLASK_DEBUG
-        )
+        # 使用高性能waitress服务器替代Flask开发服务器
+        from waitress import serve
+        serve(app, host=config.FLASK_HOST, port=config.FLASK_PORT, threads=6)
         
     except ImportError as e:
         logger.error(f"导入模块失败: {e}")

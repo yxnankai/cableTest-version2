@@ -23,8 +23,9 @@ try:
     print("✅ 服务器导入成功")
     print("🌐 启动服务器...")
     
-    # 启动服务器
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    # 使用高性能waitress服务器替代Flask开发服务器
+    from waitress import serve
+    serve(app, host='127.0.0.1', port=5000, threads=6)
     
 except ImportError as e:
     print(f"❌ 导入错误: {e}")

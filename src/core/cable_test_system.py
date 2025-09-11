@@ -12,6 +12,12 @@ from typing import List, Dict, Set, Tuple, Optional, Any
 from dataclasses import dataclass
 from enum import Enum
 import logging
+import sys
+import os
+
+# 添加性能计时器
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+from utils.performance_timer import get_timer, time_step
 
 # 配置日志
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -469,96 +475,111 @@ class CableTestSystem:
         Returns:
             TestResult: 测试结果
         """
-        start_time = time.time()
+        timer = get_timer()
         
-        # 使用继电器状态管理器优化操作
-        relay_operations = 0
-        
-        # 🔧 重要：增加详细的继电器操作调试信息
-        print(f"🔌 继电器操作调试 - 测试开始:")
-        print(f"  电源点位: {power_source}")
-        print(f"  测试点位: {test_points}")
-        print(f"  当前继电器状态: {self.relay_manager.get_operation_stats()}")
-        
-        # 1. 切换通电点位（如果需要）
-        power_source_ops = self.relay_manager.switch_power_source(power_source)
-        print(f"  电源点位切换操作: {power_source_ops} 次")
-        relay_operations += power_source_ops
-        
-        # 2. 激活测试点位（只操作需要改变状态的点位）
-        test_points_ops = self.relay_manager.activate_test_points(test_points)
-        print(f"  测试点位激活操作: {test_points_ops} 次")
-        
-        # 🔧 修复继电器操作次数计算逻辑
-        # 直接使用继电器管理器计算的操作次数，因为管理器已经处理了状态比较
-        relay_operations = power_source_ops + test_points_ops
-        
-        print(f"🔌 继电器操作次数计算:")
-        print(f"  电源点位切换操作: {power_source_ops} 次")
-        print(f"  测试点位激活操作: {test_points_ops} 次")
-        print(f"  总继电器操作次数: {relay_operations} 次")
-        
-        # 调试信息：显示继电器状态比较
-        current_full_state = {power_source} | set(test_points)
-        last_full_state = self.relay_manager.last_full_relay_states
-        print(f"🔌 继电器状态比较调试:")
-        print(f"  上一次完整状态: {sorted(last_full_state)} (共{len(last_full_state)}个)")
-        print(f"  本次完整状态: {sorted(current_full_state)} (共{len(current_full_state)}个)")
-        print(f"  状态是否相同: {current_full_state == last_full_state}")
-        
-        # 3. 模拟继电器切换时间
-        if relay_operations > 0:
-            total_switch_time = relay_operations * self.relay_switch_time
-            time.sleep(total_switch_time)
-            logger.info(f"继电器切换完成，耗时: {total_switch_time:.3f}秒")
-        
-        # 4. 执行导通检测
-        detected_connections = self._detect_connections(power_source, test_points)
-        
-        # 5. 更新关系矩阵
-        self._update_relationship_matrix(power_source, test_points, detected_connections)
-        
-        # 6. 记录测试历史
-        # 使用测试历史长度 + 1 作为测试序号
-        test_sequence = len(self.test_history) + 1
-        test_id = f"test_{test_sequence}"
-        
-        # 🔧 重要：每次实验，通电次数固定为1，表示从通电点位进行通电
-        power_on_operations = 1
-        
-        test_result = TestResult(
-            test_id=test_id,
-            timestamp=time.time(),
-            power_source=power_source,
-            active_points=test_points,
-            detected_connections=detected_connections,
-            test_duration=time.time() - start_time,
-            relay_operations=relay_operations,
-            power_on_operations=power_on_operations,
-            total_points=self.total_points
-        )
-        
-        # 兼容旧版本 - 只累加本次测试的操作次数，不重复累加管理器的累积值
-        self.relay_operation_count += relay_operations
-        # 注意：不要重复累加 RelayStateManager 的累积计数器
-        # self.power_on_count 将在每次测试中固定为1（在TestResult中处理）
-        
-        self.test_history.append(test_result)
-        
-        # 更新每轮实验后确认的关系总数历史记录
-        # 计算当前已确认的导通关系 + 不导通关系总数
-        current_conductive_count = self.get_detected_conductive_count()
-        current_non_conductive_count = self.get_confirmed_non_conductive_count()
-        total_confirmed_relations = current_conductive_count + current_non_conductive_count
-        
-        # 添加到关系历史记录中
-        self.relations_history.append(total_confirmed_relations)
-        
-        logger.info(f"测试完成: 电源点{power_source} -> {len(test_points)}个测试点")
-        logger.info(f"继电器操作: {relay_operations}次, 检测到连接: {len(detected_connections)}个")
-        logger.info(f"当前已确认关系总数: {total_confirmed_relations} (导通: {current_conductive_count}, 不导通: {current_non_conductive_count})")
-        
-        return test_result
+        with timer.time_step("run_single_test", {
+            "power_source": power_source,
+            "test_points": test_points,
+            "test_points_count": len(test_points)
+        }):
+            start_time = time.time()
+            
+            # 使用继电器状态管理器优化操作
+            relay_operations = 0
+            
+            # 🔧 重要：增加详细的继电器操作调试信息
+            print(f"🔌 继电器操作调试 - 测试开始:")
+            print(f"  电源点位: {power_source}")
+            print(f"  测试点位: {test_points}")
+            print(f"  当前继电器状态: {self.relay_manager.get_operation_stats()}")
+            
+            # 1. 切换通电点位（如果需要）
+            with timer.time_step("switch_power_source", {"power_source": power_source}):
+                power_source_ops = self.relay_manager.switch_power_source(power_source)
+                print(f"  电源点位切换操作: {power_source_ops} 次")
+                relay_operations += power_source_ops
+            
+            # 2. 激活测试点位（只操作需要改变状态的点位）
+            with timer.time_step("activate_test_points", {"test_points": test_points}):
+                test_points_ops = self.relay_manager.activate_test_points(test_points)
+                print(f"  测试点位激活操作: {test_points_ops} 次")
+            
+            # 🔧 修复继电器操作次数计算逻辑
+            # 直接使用继电器管理器计算的操作次数，因为管理器已经处理了状态比较
+            relay_operations = power_source_ops + test_points_ops
+            
+            print(f"🔌 继电器操作次数计算:")
+            print(f"  电源点位切换操作: {power_source_ops} 次")
+            print(f"  测试点位激活操作: {test_points_ops} 次")
+            print(f"  总继电器操作次数: {relay_operations} 次")
+            
+            # 调试信息：显示继电器状态比较
+            current_full_state = {power_source} | set(test_points)
+            last_full_state = self.relay_manager.last_full_relay_states
+            print(f"🔌 继电器状态比较调试:")
+            print(f"  上一次完整状态: {sorted(last_full_state)} (共{len(last_full_state)}个)")
+            print(f"  本次完整状态: {sorted(current_full_state)} (共{len(current_full_state)}个)")
+            print(f"  状态是否相同: {current_full_state == last_full_state}")
+            
+            # 3. 模拟继电器切换时间
+            with timer.time_step("relay_switch_simulation", {"relay_operations": relay_operations}):
+                if relay_operations > 0:
+                    total_switch_time = relay_operations * self.relay_switch_time
+                    time.sleep(total_switch_time)
+                    logger.info(f"继电器切换完成，耗时: {total_switch_time:.3f}秒")
+            
+            # 4. 执行导通检测
+            with timer.time_step("detect_connections", {"test_points_count": len(test_points)}):
+                detected_connections = self._detect_connections(power_source, test_points)
+            
+            # 5. 更新关系矩阵
+            with timer.time_step("update_relationship_matrix", {"connections_count": len(detected_connections)}):
+                self._update_relationship_matrix(power_source, test_points, detected_connections)
+            
+            # 6. 记录测试历史
+            with timer.time_step("create_test_result", {"test_points_count": len(test_points)}):
+                # 使用测试历史长度 + 1 作为测试序号
+                test_sequence = len(self.test_history) + 1
+                test_id = f"test_{test_sequence}"
+                
+                # 🔧 重要：每次实验，通电次数固定为1，表示从通电点位进行通电
+                power_on_operations = 1
+                
+                test_result = TestResult(
+                    test_id=test_id,
+                    timestamp=time.time(),
+                    power_source=power_source,
+                    active_points=test_points,
+                    detected_connections=detected_connections,
+                    test_duration=time.time() - start_time,
+                    relay_operations=relay_operations,
+                    power_on_operations=power_on_operations,
+                    total_points=self.total_points
+                )
+            
+            # 7. 更新系统状态
+            with timer.time_step("update_system_state", {}):
+                # 兼容旧版本 - 只累加本次测试的操作次数，不重复累加管理器的累积值
+                self.relay_operation_count += relay_operations
+                # 注意：不要重复累加 RelayStateManager 的累积计数器
+                # self.power_on_count 将在每次测试中固定为1（在TestResult中处理）
+                
+                self.test_history.append(test_result)
+                
+                # 更新每轮实验后确认的关系总数历史记录
+                # 计算当前已确认的导通关系 + 不导通关系总数
+                current_conductive_count = self.get_detected_conductive_count()
+                current_non_conductive_count = self.get_confirmed_non_conductive_count()
+                total_confirmed_relations = current_conductive_count + current_non_conductive_count
+                
+                # 添加到关系历史记录中
+                self.relations_history.append(total_confirmed_relations)
+            
+            logger.info(f"测试完成: 电源点{power_source} -> {len(test_points)}个测试点")
+            logger.info(f"继电器操作: {relay_operations}次, 检测到连接: {len(detected_connections)}个")
+            logger.info(f"当前已确认关系总数: {total_confirmed_relations} (导通: {current_conductive_count}, 不导通: {current_non_conductive_count})")
+            
+            return test_result
     
     def run_batch_tests(self, test_configs: List[Dict]) -> List[TestResult]:
         """
@@ -1558,45 +1579,58 @@ class RelayStateManager:
     
     def switch_power_source(self, new_power_source: int) -> int:
         """切换通电点位 - 智能计算继电器操作次数"""
-        operations = 0
+        timer = get_timer()
         
-        # 🔧 重要：增加电源点位切换调试信息
-        print(f"🔌 电源点位切换调试:")
-        print(f"  当前电源点位: {self.current_power_source}")
-        print(f"  新电源点位: {new_power_source}")
-        print(f"  是否需要切换: {self.current_power_source != new_power_source}")
-        
-        if self.current_power_source != new_power_source:
-            # 关闭原通电点位
-            if self.current_power_source is not None:
-                if self.relay_states[self.current_power_source] == RelayState.ON:
-                    self.relay_states[self.current_power_source] = RelayState.OFF
-                    operations += 1
-                    logger.debug(f"关闭原通电点位: {self.current_power_source}")
+        with timer.time_step("relay_switch_power_source", {
+            "current_power_source": self.current_power_source,
+            "new_power_source": new_power_source,
+            "needs_switch": self.current_power_source != new_power_source
+        }):
+            operations = 0
             
-            # 开启新通电点位
-            if new_power_source is not None:
-                if self.relay_states[new_power_source] == RelayState.OFF:
-                    self.relay_states[new_power_source] = RelayState.ON
-                    operations += 1
-                    self.power_on_count += 1
-                    logger.debug(f"开启新通电点位: {new_power_source}")
+            # 🔧 重要：增加电源点位切换调试信息
+            print(f"🔌 电源点位切换调试:")
+            print(f"  当前电源点位: {self.current_power_source}")
+            print(f"  新电源点位: {new_power_source}")
+            print(f"  是否需要切换: {self.current_power_source != new_power_source}")
             
-            self.current_power_source = new_power_source
-            self.relay_operation_count += operations
+            if self.current_power_source != new_power_source:
+                # 关闭原通电点位
+                if self.current_power_source is not None:
+                    if self.relay_states[self.current_power_source] == RelayState.ON:
+                        self.relay_states[self.current_power_source] = RelayState.OFF
+                        operations += 1
+                        logger.debug(f"关闭原通电点位: {self.current_power_source}")
+                
+                # 开启新通电点位
+                if new_power_source is not None:
+                    if self.relay_states[new_power_source] == RelayState.OFF:
+                        self.relay_states[new_power_source] = RelayState.ON
+                        operations += 1
+                        self.power_on_count += 1
+                        logger.debug(f"开启新通电点位: {new_power_source}")
+                
+                self.current_power_source = new_power_source
+                self.relay_operation_count += operations
+                
+                logger.info(f"通电点位切换: {self.current_power_source} (继电器操作: {operations}次)")
             
-            logger.info(f"通电点位切换: {self.current_power_source} (继电器操作: {operations}次)")
-        
-        return operations
+            return operations
     
     def activate_test_points(self, test_points: List[int]) -> int:
         """激活测试点位 - 只操作需要改变状态的点位"""
-        operations = 0
+        timer = get_timer()
         
-        # 🔧 重要：计算新的继电器状态集合
-        new_relay_states = {self.current_power_source} | set(test_points)
-        if self.current_power_source is None:
-            new_relay_states = set(test_points)
+        with timer.time_step("relay_activate_test_points", {
+            "test_points": test_points,
+            "test_points_count": len(test_points)
+        }):
+            operations = 0
+            
+            # 🔧 重要：计算新的继电器状态集合
+            new_relay_states = {self.current_power_source} | set(test_points)
+            if self.current_power_source is None:
+                new_relay_states = set(test_points)
         
         # 🔧 重要：如果继电器状态完全相同，切换次数为0
         # 🔧 关键修复：使用 last_full_relay_states 来比较，这是上一次测试的完整继电器状态

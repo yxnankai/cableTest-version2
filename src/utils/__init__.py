@@ -4,8 +4,7 @@
 包含演示脚本和使用示例
 """
 
-from .demo_flask_system import demo_flask_system
-from .demo_web_system import demo_web_system
-from .example_usage import example_usage
+# 导入性能计时器
+from .performance_timer import get_timer, time_step, print_performance_report, export_performance_data
 
-__all__ = ['demo_flask_system', 'demo_web_system', 'example_usage']
+__all__ = ['get_timer', 'time_step', 'print_performance_report', 'export_performance_data']

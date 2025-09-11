@@ -745,11 +745,30 @@ class AdaptiveGroupingTester:
                     min_ratio = threshold['min_unknown_ratio']
                     max_ratio = threshold['max_unknown_ratio']
                     
+                    # 修复：确保 min_ratio 和 max_ratio 是数值类型
+                    if isinstance(min_ratio, (list, tuple)):
+                        min_ratio = min_ratio[0] if min_ratio else 0.0
+                    elif not isinstance(min_ratio, (int, float)):
+                        min_ratio = float(min_ratio) if min_ratio else 0.0
+                    
+                    if isinstance(max_ratio, (list, tuple)):
+                        max_ratio = max_ratio[0] if max_ratio else 1.0
+                    elif not isinstance(max_ratio, (int, float)):
+                        max_ratio = float(max_ratio) if max_ratio else 1.0
+                    
                     # 修复：使用正确的范围检查
                     if min_ratio <= unknown_ratio <= max_ratio:
                         strategy_name = threshold.get('strategy_name', f'{phase_name}策略')
+                        group_ratio = threshold['group_ratio']
+                        
+                        # 确保 group_ratio 是浮点数
+                        if isinstance(group_ratio, (list, tuple)):
+                            group_ratio = group_ratio[0] if group_ratio else 0.0
+                        elif not isinstance(group_ratio, (int, float)):
+                            group_ratio = float(group_ratio) if group_ratio else 0.0
+                        
                         print(f"  ✅ 匹配策略 {phase_name} ({strategy_name}): {min_ratio:.1%} <= {unknown_ratio:.1%} <= {max_ratio:.1%}")
-                        return threshold['group_ratio'], strategy_name
+                        return group_ratio, strategy_name
                     else:
                         print(f"  ❌ 不匹配策略 {phase_name}: {min_ratio:.1%} <= {unknown_ratio:.1%} <= {max_ratio:.1%}")
             
@@ -758,10 +777,30 @@ class AdaptiveGroupingTester:
                 threshold = phase_thresholds['binary_search']
                 min_ratio = threshold['min_unknown_ratio']
                 max_ratio = threshold['max_unknown_ratio']
+                
+                # 修复：确保 min_ratio 和 max_ratio 是数值类型
+                if isinstance(min_ratio, (list, tuple)):
+                    min_ratio = min_ratio[0] if min_ratio else 0.0
+                elif not isinstance(min_ratio, (int, float)):
+                    min_ratio = float(min_ratio) if min_ratio else 0.0
+                
+                if isinstance(max_ratio, (list, tuple)):
+                    max_ratio = max_ratio[0] if max_ratio else 1.0
+                elif not isinstance(max_ratio, (int, float)):
+                    max_ratio = float(max_ratio) if max_ratio else 1.0
+                
                 if min_ratio <= unknown_ratio <= max_ratio:
                     strategy_name = threshold.get('strategy_name', '二分法策略')
+                    group_ratio = threshold.get('group_ratio', 0.0)
+                    
+                    # 确保 group_ratio 是浮点数
+                    if isinstance(group_ratio, (list, tuple)):
+                        group_ratio = group_ratio[0] if group_ratio else 0.0
+                    elif not isinstance(group_ratio, (int, float)):
+                        group_ratio = float(group_ratio) if group_ratio else 0.0
+                    
                     print(f"  ✅ 匹配二分法策略 ({strategy_name}): {min_ratio:.1%} <= {unknown_ratio:.1%} <= {max_ratio:.1%}")
-                    return 0.0, strategy_name
+                    return group_ratio, strategy_name
             
             # 如果都不匹配，使用二分法
             print(f"  ⚠️  没有匹配的策略，使用二分法")
@@ -1233,6 +1272,9 @@ class AdaptiveGroupingTester:
         
         print(f"\n🔍 开始二分法测试")
         print(f"目标测试次数: {max_tests}")
+        
+        # 🔧 重要：重新计算未知关系，确保数据准确性
+        self.update_unknown_relations()
         print(f"剩余未知关系: {len(self.unknown_relations)} 个")
         
         tests_run = 0
@@ -1406,6 +1448,20 @@ class AdaptiveGroupingTester:
         print(f"累计测试: {self.total_tests} 次")
         
         return tests_run
+    
+    def update_unknown_relations(self):
+        """更新未知关系集合 - 基于当前关系矩阵状态"""
+        self.unknown_relations.clear()
+        self.known_relations.clear()
+        
+        for i in range(self.total_points):
+            for j in range(i + 1, self.total_points):
+                if self.relationship_matrix[i][j] is None:
+                    # 未知关系
+                    self.unknown_relations.add((i, j))
+                else:
+                    # 已知关系
+                    self.known_relations.add((i, j))
     
     def select_optimal_binary_pair(self, unknown_point_pairs: List[Tuple[int, int]]) -> Tuple[int, int]:
         """智能选择二分法测试的点位对 - 优先选择概率较高的"""

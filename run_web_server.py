@@ -67,8 +67,9 @@ def main():
     logger.info(f"🔌 API接口: http://localhost:{port}/api/")
     # logger.info(f"📡 WebSocket: ws://localhost:{port}/socket.io/")  # 暂时禁用WebSocket
     
-    # 使用简单的Flask开发服务器，避免WebSocket问题
-    app.run(host='0.0.0.0', port=port, debug=True, use_reloader=False)
+    # 使用高性能waitress服务器替代Flask开发服务器
+    from waitress import serve
+    serve(app, host='127.0.0.1', port=port, threads=6)
 
 if __name__ == '__main__':
     main()

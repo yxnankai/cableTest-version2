@@ -8,6 +8,12 @@ import time
 from typing import Dict, Any, List
 import threading
 import queue
+import sys
+import os
+
+# 添加性能计时器
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+from utils.performance_timer import get_timer, time_step, print_performance_report
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'cable_test_secret_key'
@@ -547,8 +553,15 @@ class WebFlaskTestServer:
         except Exception as e:
             raise e
 
-# 创建服务器实例
-server = WebFlaskTestServer()
+# 创建服务器实例（延迟初始化）
+server = None
+
+def get_server():
+    """获取服务端实例（单例模式）"""
+    global server
+    if server is None:
+        server = WebFlaskTestServer()
+    return server
 
 # HTML模板
 HTML_TEMPLATE = """
@@ -2415,83 +2428,95 @@ def health_check():
 @app.route('/api/points/status')
 def get_point_status():
     """获取点位状态"""
+    timer = get_timer()
     point_id = request.args.get('point_id', type=int)
-    return jsonify(server.get_point_status(point_id))
+    
+    with timer.time_step("api_get_point_status", {"endpoint": "/api/points/status", "point_id": point_id}):
+        return jsonify(get_server().get_point_status(point_id))
 
 @app.route('/api/clusters')
 def get_cluster_info():
     """获取点对关系信息（兼容保留，返回空连接组）"""
-    return jsonify(server.get_cluster_info())
+    timer = get_timer()
+    
+    with timer.time_step("api_get_cluster_info", {"endpoint": "/api/clusters"}):
+        return jsonify(get_server().get_cluster_info())
 
 @app.route('/api/experiment', methods=['POST'])
 def run_experiment():
     """运行实验"""
-    try:
-        data = request.get_json()
-        if not data:
-            return jsonify({'success': False, 'error': '无效的请求数据'}), 400
-        
-        result = server.run_experiment(data)
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+    timer = get_timer()
+    
+    with timer.time_step("api_run_experiment", {"endpoint": "/api/experiment"}):
+        try:
+            data = request.get_json()
+            if not data:
+                return jsonify({'success': False, 'error': '无效的请求数据'}), 400
+            
+            result = get_server().run_experiment(data)
+            return jsonify(result)
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/system/info')
 def get_system_info():
     """获取系统信息"""
-    return jsonify(server.get_system_info())
+    timer = get_timer()
+    
+    with timer.time_step("api_get_system_info", {"endpoint": "/api/system/info"}):
+        return jsonify(get_server().get_system_info())
 
 @app.route('/api/test/progress')
 def get_test_progress():
     """获取实验进度数据"""
-    return jsonify(server.get_test_progress())
+    return jsonify(get_server().get_test_progress())
 
 # ============== 新增：点-点关系API ==============
 @app.route('/api/relationships/summary')
 def get_relationship_summary():
-    return jsonify(server.get_relationship_summary())
+    return jsonify(get_server().get_relationship_summary())
 
 @app.route('/api/relationships/conductive')
 def get_conductive_pairs():
-    return jsonify(server.get_conductive_pairs())
+    return jsonify(get_server().get_conductive_pairs())
 
 @app.route('/api/relationships/non_conductive')
 def get_non_conductive_pairs():
-    return jsonify(server.get_non_conductive_pairs())
+    return jsonify(get_server().get_non_conductive_pairs())
 
 @app.route('/api/relationships/unconfirmed')
 def get_unconfirmed_pairs():
-    return jsonify(server.get_unconfirmed_pairs())
+    return jsonify(get_server().get_unconfirmed_pairs())
 
 @app.route('/api/relationships/point/<int:point_id>')
 def get_point_relationships(point_id: int):
     """获取指定点位的导通关系"""
-    return jsonify(server.get_point_relationships(point_id))
+    return jsonify(get_server().get_point_relationships(point_id))
 
 @app.route('/api/relationships/matrix')
 def get_relationship_matrix():
     """获取完整的关系矩阵"""
-    return jsonify(server.get_relationship_matrix())
+    return jsonify(get_server().get_relationship_matrix())
 
 @app.route('/api/relationships/true_matrix')
 def get_true_relationship_matrix():
     """获取真实关系矩阵"""
-    return jsonify(server.get_true_relationship_matrix())
+    return jsonify(get_server().get_true_relationship_matrix())
 
 @app.route('/api/relationships/matrices_comparison')
 def get_relationship_matrices_comparison():
     """获取检测到的关系矩阵与真实关系矩阵的对比"""
-    return jsonify(server.get_relationship_matrices_comparison())
+    return jsonify(get_server().get_relationship_matrices_comparison())
 
 @app.route('/api/relationships/real_conductive/point/<int:point_id>')
 def get_real_conductive_points(point_id: int):
     """获取指定点位的真实导通点位信息"""
-    return jsonify(server.get_real_conductive_points(point_id))
+    return jsonify(get_server().get_real_conductive_points(point_id))
 
 @app.route('/api/relationships/real_conductive/all')
 def get_all_real_conductive_info():
     """获取所有点位的真实导通信息概览"""
-    return jsonify(server.get_all_real_conductive_info())
+    return jsonify(get_server().get_all_real_conductive_info())
 
 @app.route('/api/test/history')
 def get_test_history():
@@ -2515,7 +2540,7 @@ def get_test_history():
     page_size = max(1, page_size)
 
     # 取最近优先
-    items = list(server.test_system.test_history)[::-1]
+    items = list(get_server().test_system.test_history)[::-1]
     total = len(items)
     start = (page - 1) * page_size
     end = start + page_size
@@ -2536,23 +2561,23 @@ def get_test_history():
 @app.route('/api/system/reset', methods=['POST'])
 def reset_system():
     """重置系统"""
-    return jsonify(server.reset_system())
+    return jsonify(get_server().reset_system())
 
 @app.route('/api/clusters/real')
 def get_real_clusters():
     """获取真实连接点对关系信息"""
-    return jsonify(server.get_real_clusters())
+    return jsonify(get_server().get_real_clusters())
 
 @app.route('/api/clusters/comparison')
 def get_cluster_comparison():
     """获取连接点位对比信息"""
-    return jsonify(server.get_cluster_comparison())
+    return jsonify(get_server().get_cluster_comparison())
 
 @app.route('/api/clusters/detailed')
 def get_detailed_cluster_info():
     """获取详细的点对关系信息"""
     try:
-        data = server.get_detailed_cluster_info()
+        data = get_server().get_detailed_cluster_info()
         # tests/test_web_api.py 直接走 _assert_json_success -> 需要 success+data
         return jsonify({'success': True, 'data': data})
     except Exception as e:
@@ -2561,13 +2586,13 @@ def get_detailed_cluster_info():
 @app.route('/api/clusters/visualization')
 def get_cluster_visualization():
     """获取连接组可视化数据"""
-    return jsonify(server.get_cluster_visualization())
+    return jsonify(get_server().get_cluster_visualization())
 
 @app.route('/api/clusters/unconfirmed_relationships')
 def get_unconfirmed_cluster_relationships():
     """获取未确认连接组关系信息"""
     try:
-        data = server.get_unconfirmed_cluster_relationships()
+        data = get_server().get_unconfirmed_cluster_relationships()
         # 确保包含 summary 关键字段（即使为空也返回基本结构）
         if isinstance(data, dict):
             data.setdefault('summary', {
@@ -2617,7 +2642,7 @@ def get_confirmed_non_conductive():
         page = max(1, page)
         page_size = max(1, page_size)
 
-        data = server.test_system.get_confirmed_non_conductive_relationships()
+        data = get_server().test_system.get_confirmed_non_conductive_relationships()
 
         def do_paginate(lst):
             total = len(lst)
@@ -2679,10 +2704,10 @@ def run_batch_experiments():
         
         results = []
         for i in range(test_count):
-            power_source = i % server.test_system.total_points
-            test_points = list(range(i * 10, min((i + 1) * 10, server.test_system.total_points)))
+            power_source = i % get_server().test_system.total_points
+            test_points = list(range(i * 10, min((i + 1) * 10, get_server().test_system.total_points)))
             
-            result = server.run_experiment({
+            result = get_server().run_experiment({
                 'power_source': power_source,
                 'test_points': test_points
             })
@@ -2703,4 +2728,6 @@ if __name__ == '__main__':
     # print("📡 WebSocket: ws://localhost:5000/socket.io/")  # 暂时禁用WebSocket
     
     # socketio.run(app, host='0.0.0.0', port=5000, debug=True)  # 暂时禁用WebSocket
-    app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False)  # 使用简单Flask服务器
+    # 使用高性能waitress服务器替代Flask开发服务器
+    from waitress import serve
+    serve(app, host='127.0.0.1', port=5000, threads=6)

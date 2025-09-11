@@ -1409,4 +1409,6 @@ def export_results():
 if __name__ == '__main__':
     print("🚀 启动测试端服务器...")
     print("访问地址: http://localhost:5001")
-    app.run(host='0.0.0.0', port=5001, debug=True)
+    # 使用高性能waitress服务器替代Flask开发服务器
+    from waitress import serve
+    serve(app, host='127.0.0.1', port=5001, threads=6)

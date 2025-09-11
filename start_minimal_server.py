@@ -49,8 +49,9 @@ def main():
         logger.info(f"📱 前端界面: http://localhost:5000")
         logger.info(f"🔌 API接口: http://localhost:5000/api/")
         
-        # 使用简单的Flask开发服务器
-        app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
+        # 使用高性能waitress服务器替代Flask开发服务器
+        from waitress import serve
+        serve(app, host='0.0.0.0', port=5000, threads=6)
         
     except Exception as e:
         logger.error(f"启动服务器失败: {e}")

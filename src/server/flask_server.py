@@ -1012,4 +1012,6 @@ if __name__ == '__main__':
     logger.info(f"系统配置: {server.test_system.total_points} 个测试点位")
     logger.info("服务端启动完成，监听端口 5000")
     
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    # 使用高性能waitress服务器替代Flask开发服务器
+    from waitress import serve
+    serve(app, host='127.0.0.1', port=5000, threads=6)
