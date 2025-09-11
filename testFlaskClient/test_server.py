@@ -583,8 +583,8 @@ TEST_FRONTEND_HTML = """
         
         // 删除策略
         function removeStrategy() {
-            if (strategies.length <= 2) {
-                alert('至少需要保留2个策略！');
+            if (strategies.length <= 1) {
+                alert('至少需要保留1个策略！');
                 return;
             }
             
@@ -601,8 +601,8 @@ TEST_FRONTEND_HTML = """
         
         // 删除特定策略
         function removeSpecificStrategy(strategyId) {
-            if (strategies.length <= 2) {
-                alert('至少需要保留2个策略！');
+            if (strategies.length <= 1) {
+                alert('至少需要保留1个策略！');
                 return;
             }
             
@@ -725,8 +725,8 @@ TEST_FRONTEND_HTML = """
         // 更新删除按钮状态
         function updateRemoveButtonState() {
             const removeBtn = document.getElementById('removeStrategyBtn');
-            const clusterStrategies = strategies.filter(s => s.type !== 'binary_search');
-            removeBtn.disabled = clusterStrategies.length <= 1;
+            // 只在只剩下1个策略时禁用删除按钮
+            removeBtn.disabled = strategies.length <= 1;
         }
         
         // 重新调整范围
