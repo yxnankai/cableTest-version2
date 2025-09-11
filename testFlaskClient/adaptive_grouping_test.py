@@ -1633,14 +1633,6 @@ class AdaptiveGroupingTester:
                 import traceback
                 traceback.print_exc()
                 time.sleep(0.1)
-                                    break
-                                    
-                            except Exception as e:
-                                print(f"❌ 二分测试过程中发生错误: {e}")
-                                import traceback
-                                traceback.print_exc()
-                                time.sleep(0.1)
-                                break
                 
             except Exception as e:
                 print(f"❌ 二分法测试过程中发生错误: {e}")
