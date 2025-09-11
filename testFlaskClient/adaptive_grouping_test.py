@@ -1308,12 +1308,19 @@ class AdaptiveGroupingTester:
         
         current_ratio = self.get_current_group_ratio()
         print(f"🔍 调试 run_phase_tests: current_ratio={current_ratio}, 类型={type(current_ratio)}")
-        print(f"🔍 调试 run_phase_tests: current_ratio == 0.0 结果={current_ratio == 0.0}")
+        
+        # 确保是浮点数进行比较
+        current_ratio_float = float(current_ratio)
+        print(f"🔍 调试 run_phase_tests: current_ratio_float={current_ratio_float}, 类型={type(current_ratio_float)}")
+        print(f"🔍 调试 run_phase_tests: current_ratio_float == 0.0 结果={current_ratio_float == 0.0}")
         
         # 策略切换仅取决于策略配置
-        if current_ratio == 0.0:  # 二分法策略
+        if current_ratio_float == 0.0:  # 二分法策略 - 使用浮点数比较
             print(f"\n🚀🚀🚀 检测到二分法策略，切换到二分法测试 🚀🚀🚀")
-            return self.run_binary_search_testing(max_tests)
+            # 🔧 重要：设置较大的max_tests值，确保二分查找能够执行完整
+            binary_max_tests = max(max_tests, 100)  # 至少执行100次测试
+            print(f"🔍 二分法测试最大次数: {binary_max_tests}")
+            return self.run_binary_search_testing(binary_max_tests)
         
         # 获取当前策略名称
         current_strategy_name = self.get_current_strategy_name()
@@ -1412,9 +1419,13 @@ class AdaptiveGroupingTester:
         # 🔧 重要：记录测试前的关系数量，用于计算新探查的关系数量
         initial_known_relations = len(self.known_relations)
         
+        # 🔧 重要：优先选择基准点位1进行测试，确保从用户指定的基准点开始
+        base_points = [1] + [p for p in range(self.total_points) if p != 1]  # 先测试点位1，然后再测试其他点位
+        
         # 遍历所有点位作为基准点位
-        for base_point in range(self.total_points):
+        for base_point in base_points:
             if tests_run >= max_tests:
+                print(f"⚠️  已达到最大测试次数限制 ({max_tests})")
                 break
                 
             print(f"\n🎯 选择基准点位 {base_point} 进行二分法测试")
@@ -1435,12 +1446,12 @@ class AdaptiveGroupingTester:
             # 步骤1: 选定基准点位，将所有未知关系点位设为开启
             current_unknown_points = unknown_points_with_base.copy()
             
+            # 步骤2: 对基准点位通电，测试所有未知点位
+            print(f"\n🔬 二分法测试 #{self.total_tests + 1}")
+            print(f"基准点位: {base_point} (通电)")
+            print(f"测试点位: {current_unknown_points} (全部开启)")
+            
             try:
-                # 步骤2: 对基准点位通电，测试所有未知点位
-                print(f"\n🔬 二分法测试 #{self.total_tests + 1}")
-                print(f"基准点位: {base_point} (通电)")
-                print(f"测试点位: {current_unknown_points} (全部开启)")
-                
                 test_start_time = time.time()
                 test_result = self.run_single_test(current_unknown_points, base_point, "二分法策略")
                 
@@ -1513,8 +1524,11 @@ class AdaptiveGroupingTester:
                         # 步骤4: 如果检测到连接，执行二分查找
                         print(f"🔍 检测到与基准点位 {base_point} 的导通关系，开始二分查找")
                         
-                        # 执行二分查找过程
-                        while tests_run < max_tests and current_unknown_points:
+                        # 执行二分查找过程 - 确保至少执行几次二分查找
+                        binary_search_rounds = 0
+                        max_binary_rounds = min(5, max_tests - tests_run)  # 最多执行5轮二分查找或直到达到最大测试次数
+                        
+                        while tests_run < max_tests and current_unknown_points and binary_search_rounds < max_binary_rounds:
                             # 将未知点位分成两半
                             mid = len(current_unknown_points) // 2
                             first_half = current_unknown_points[:mid]
@@ -1525,79 +1539,100 @@ class AdaptiveGroupingTester:
                             print(f"\n🔬 二分法测试 #{self.total_tests + 1}")
                             print(f"基准点位: {base_point} (通电)")
                             print(f"测试点位: {first_half} (二分测试)")
+                            print(f"二分查找轮次: {binary_search_rounds + 1}/{max_binary_rounds}")
                             
-                            try:
-                                # 测试第一半点位
-                                test_start_time = time.time()
-                                half_test_result = self.run_single_test(first_half, base_point, "二分法策略")
+                            # 测试第一半点位
+                            test_start_time = time.time()
+                            half_test_result = self.run_single_test(first_half, base_point, "二分法策略")
+                            
+                            if half_test_result:
+                                test_duration = time.time() - test_start_time
                                 
-                                if half_test_result:
-                                    test_duration = time.time() - test_start_time
-                                    
-                                    # 🔧 重要：强制设置正确的测试数据
-                                    if 'test_result' in half_test_result:
-                                        half_test_result['test_result']['power_on_operations'] = 1
-                                    else:
-                                        half_test_result['power_on_operations'] = 1
-                                    
-                                    half_test_result['test_duration'] = test_duration
-                                    
-                                    # 更新关系矩阵
-                                    self.update_relationship_matrix(half_test_result)
-                                    
-                                    # 更新统计
-                                    self.total_tests += 1
-                                    tests_run += 1
-                                    
-                                    # 获取检测到的连接
-                                    half_detected_connections = half_test_result.get('detected_connections', [])
-                                    
-                                    print(f"✅ 二分测试完成")
-                                    print(f"检测到连接: {len(half_detected_connections)}个")
-                                    print(f"通电次数: 1次")
-                                    print(f"测试耗时: {test_duration:.2f}秒")
-                                    
-                                    # 更新未知点位列表
-                                    updated_half_unknown = []
-                                    for point in first_half:
+                                # 🔧 重要：强制设置正确的测试数据
+                                if 'test_result' in half_test_result:
+                                    half_test_result['test_result']['power_on_operations'] = 1
+                                else:
+                                    half_test_result['power_on_operations'] = 1
+                                
+                                half_test_result['test_duration'] = test_duration
+                                
+                                # 更新关系矩阵
+                                self.update_relationship_matrix(half_test_result)
+                                
+                                # 更新统计
+                                self.total_tests += 1
+                                tests_run += 1
+                                binary_search_rounds += 1
+                                
+                                # 获取检测到的连接
+                                half_detected_connections = half_test_result.get('detected_connections', [])
+                                
+                                print(f"✅ 二分测试完成")
+                                print(f"检测到连接: {len(half_detected_connections)}个")
+                                print(f"通电次数: 1次")
+                                print(f"测试耗时: {test_duration:.2f}秒")
+                                
+                                # 更新未知点位列表
+                                updated_half_unknown = []
+                                for point in first_half:
+                                    if ((base_point, point) in self.unknown_relations or 
+                                        (point, base_point) in self.unknown_relations):
+                                        updated_half_unknown.append(point)
+                                
+                                # 如果在第一半检测到连接，则继续在第一半中查找
+                                if len(half_detected_connections) > 0:
+                                    print(f"🔍 在第一半点位中检测到连接，继续在第一半中查找")
+                                    current_unknown_points = updated_half_unknown
+                                else:
+                                    # 如果在第一半未检测到连接，则在第二半中查找
+                                    print(f"📊 在第一半点位中未检测到连接，切换到第二半查找")
+                                    # 先将第一半中剩余的未知点位标记为不导通
+                                    for point in updated_half_unknown:
+                                        if (base_point, point) in self.unknown_relations:
+                                            self.unknown_relations.remove((base_point, point))
+                                            self.known_relations.add((base_point, point))
+                                            # 更新关系矩阵为不导通
+                                            self.relationship_matrix[base_point][point] = 0
+                                            self.relationship_matrix[point][base_point] = 0
+                                    # 然后切换到第二半
+                                    second_half = current_unknown_points[mid:]
+                                    # 过滤第二半中已经确认关系的点位
+                                    updated_second_half = []
+                                    for point in second_half:
                                         if ((base_point, point) in self.unknown_relations or 
                                             (point, base_point) in self.unknown_relations):
-                                            updated_half_unknown.append(point)
-                                    
-                                    # 如果在第一半检测到连接，则继续在第一半中查找
-                                    if len(half_detected_connections) > 0:
-                                        print(f"🔍 在第一半点位中检测到连接，继续在第一半中查找")
-                                        current_unknown_points = updated_half_unknown
-                                    else:
-                                        # 如果在第一半未检测到连接，则在第二半中查找
-                                        print(f"📊 在第一半点位中未检测到连接，切换到第二半查找")
-                                        # 先将第一半中剩余的未知点位标记为不导通
-                                        for point in updated_half_unknown:
-                                            if (base_point, point) in self.unknown_relations:
-                                                self.unknown_relations.remove((base_point, point))
-                                                self.known_relations.add((base_point, point))
-                                                # 更新关系矩阵为不导通
-                                                self.relationship_matrix[base_point][point] = 0
-                                                self.relationship_matrix[point][base_point] = 0
-                                        # 然后切换到第二半
-                                        second_half = current_unknown_points[mid:]
-                                        # 过滤第二半中已经确认关系的点位
-                                        updated_second_half = []
-                                        for point in second_half:
-                                            if ((base_point, point) in self.unknown_relations or 
-                                                (point, base_point) in self.unknown_relations):
-                                                updated_second_half.append(point)
-                                        current_unknown_points = updated_second_half
-                                    
-                                    # 显示当前状态
-                                    self.print_current_status()
-                                    
-                                    # 短暂休息
-                                    time.sleep(0.1)
-                                    
-                                else:
-                                    print(f"❌ 二分测试失败，跳过")
-                                    time.sleep(0.1)
+                                            updated_second_half.append(point)
+                                    current_unknown_points = updated_second_half
+                                
+                                # 显示当前状态
+                                self.print_current_status()
+                                
+                                # 短暂休息
+                                time.sleep(0.1)
+                                
+                            else:
+                                print(f"❌ 二分测试失败，跳过")
+                                time.sleep(0.1)
+                                binary_search_rounds += 1
+                        
+                        # 如果还有剩余的未知点位，强制标记为不导通
+                        if current_unknown_points:
+                            print(f"📊 二分查找结束，仍有 {len(current_unknown_points)} 个未知点位，标记为不导通")
+                            for point in current_unknown_points:
+                                if (base_point, point) in self.unknown_relations:
+                                    self.unknown_relations.remove((base_point, point))
+                                    self.known_relations.add((base_point, point))
+                                    # 更新关系矩阵为不导通
+                                    self.relationship_matrix[base_point][point] = 0
+                                    self.relationship_matrix[point][base_point] = 0
+                else:
+                    print(f"❌ 测试失败，跳过基准点位 {base_point}")
+                    time.sleep(0.1)
+            except Exception as e:
+                print(f"❌ 测试基准点位 {base_point} 时出错: {e}")
+                import traceback
+                traceback.print_exc()
+                time.sleep(0.1)
                                     break
                                     
                             except Exception as e:
