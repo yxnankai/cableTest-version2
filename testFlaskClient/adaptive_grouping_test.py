@@ -27,9 +27,10 @@ class AdaptiveGroupingTester:
             # 从新的配置结构中提取分组比例
             phase_thresholds = config['test_execution']['phase_switch_criteria']['phase_thresholds']
             self.group_ratios = []
-            for phase_name in ['phase_1', 'phase_2', 'phase_3']:
-                if phase_name in phase_thresholds:
-                    self.group_ratios.append(phase_thresholds[phase_name]['group_ratio'])
+            # 动态读取所有非binary_search的阶段
+            for phase_name, threshold in phase_thresholds.items():
+                if phase_name != 'binary_search':
+                    self.group_ratios.append(threshold['group_ratio'])
         else:
             # 兼容旧的配置结构
             self.group_ratios = config['adaptive_grouping']['group_ratios']
@@ -43,6 +44,11 @@ class AdaptiveGroupingTester:
         self.current_phase = 0  # 当前测试阶段
         self.phase_test_counts = [0] * len(self.group_ratios)  # 每阶段测试次数
         self.total_tests = 0  # 总测试次数
+        
+        # 循环检测
+        self.last_strategy_ratio = None
+        self.strategy_repeat_count = 0
+        self.max_strategy_repeats = 10  # 最大重复次数
         
         # 分组历史
         self.group_history = []
@@ -325,6 +331,10 @@ class AdaptiveGroupingTester:
             # 如果提供了策略名称，添加到payload中
             if strategy_name:
                 payload["strategy"] = strategy_name
+            else:
+                # 如果没有提供策略名称，使用当前策略名称
+                current_strategy = self.get_current_strategy_name()
+                payload["strategy"] = current_strategy
             
             print(f"🔍 发送测试请求: {payload}")
             
@@ -530,8 +540,16 @@ class AdaptiveGroupingTester:
                     unknown_ratio = (total_possible_relations - server_confirmed_count) / total_possible_relations
                     
                     # 🔧 重要：根据配置的策略阈值确定目标策略
-                    target_ratio = self._get_strategy_by_unknown_ratio(unknown_ratio)
-                    target_strategy = self.get_strategy_name_by_ratio(target_ratio)
+                    # _get_strategy_by_unknown_ratio返回元组(ratio, name)
+                    target_ratio_tuple = self._get_strategy_by_unknown_ratio(unknown_ratio)
+                    
+                    # 正确处理返回的元组
+                    if isinstance(target_ratio_tuple, tuple) and len(target_ratio_tuple) >= 1:
+                        target_ratio_value = target_ratio_tuple[0]
+                        target_strategy = target_ratio_tuple[1] if len(target_ratio_tuple) > 1 else self.get_strategy_name_by_ratio(target_ratio_value)
+                    else:
+                        target_ratio_value = target_ratio_tuple
+                        target_strategy = self.get_strategy_name_by_ratio(target_ratio_value)
                     
                     # 获取当前策略
                     current_ratio = self.get_current_group_ratio()
@@ -541,21 +559,40 @@ class AdaptiveGroupingTester:
                     if current_strategy != target_strategy:
                         print(f"🔄 未知关系比例: {unknown_ratio:.1%}")
                         print(f"当前策略: {current_strategy} ({current_ratio:.1%})")
-                        print(f"目标策略: {target_strategy} ({target_ratio:.1%})")
+                        print(f"目标策略: {target_strategy} ({target_ratio_value:.1%})")
                         print(f"准备切换策略")
                         return True
                     
                     return False
         except Exception as e:
             print(f"⚠️  获取服务端数据失败，使用本地数据: {e}")
+            import traceback
+            traceback.print_exc()
         
         # 如果服务端获取失败，使用本地数据作为备用
         total_possible_relations = self.total_points * (self.total_points - 1)
         unknown_ratio = len(self.unknown_relations) / total_possible_relations
         
         # 🔧 重要：根据配置的策略阈值确定目标策略
-        target_ratio = self._get_strategy_by_unknown_ratio(unknown_ratio)
-        target_strategy = self.get_strategy_name_by_ratio(target_ratio)
+        try:
+            target_ratio_tuple = self._get_strategy_by_unknown_ratio(unknown_ratio)
+        except Exception as e:
+            print(f"⚠️  策略选择失败: {e}")
+            import traceback
+            traceback.print_exc()
+            target_ratio_tuple = (0.1, "unknown")  # 返回默认值
+        
+        # 处理target_ratio可能是元组的情况
+        print(f"🔍 调试 should_switch_phase: target_ratio_tuple 类型={type(target_ratio_tuple)}, 值={target_ratio_tuple}")
+        
+        if isinstance(target_ratio_tuple, tuple) and len(target_ratio_tuple) >= 1:
+            print(f"🔍 检测到元组，提取元素: {target_ratio_tuple}")
+            target_ratio_value = target_ratio_tuple[0]
+            target_strategy = target_ratio_tuple[1] if len(target_ratio_tuple) > 1 else self.get_strategy_name_by_ratio(target_ratio_value)
+        else:
+            print(f"🔍 非元组类型，调用 get_strategy_name_by_ratio")
+            target_ratio_value = target_ratio_tuple
+            target_strategy = self.get_strategy_name_by_ratio(target_ratio_value)
         
         # 获取当前策略
         current_ratio = self.get_current_group_ratio()
@@ -565,14 +602,32 @@ class AdaptiveGroupingTester:
         if current_strategy != target_strategy:
             print(f"🔄 未知关系比例: {unknown_ratio:.1%}")
             print(f"当前策略: {current_strategy} ({current_ratio:.1%})")
-            print(f"目标策略: {target_strategy} ({target_ratio:.1%})")
+            print(f"目标策略: {target_strategy} ({target_ratio_value:.1%})")
             print(f"准备切换策略")
             return True
         
         return False
     
-    def get_strategy_name_by_ratio(self, ratio: float) -> str:
+    def get_strategy_name_by_ratio(self, ratio) -> str:
         """根据分组比例获取策略名称"""
+        print(f"🔍 调试 get_strategy_name_by_ratio: 输入类型={type(ratio)}, 值={ratio}")
+        
+        # 处理元组类型
+        if isinstance(ratio, tuple):
+            print(f"⚠️  检测到元组类型，提取第一个元素: {ratio[0] if ratio else 0.0}")
+            ratio = ratio[0] if ratio else 0.0
+        
+        # 确保是数值类型
+        if not isinstance(ratio, (int, float)):
+            print(f"⚠️  非数值类型，尝试转换: {ratio}")
+            try:
+                ratio = float(ratio)
+            except (ValueError, TypeError):
+                print(f"❌ 无法转换为数值，使用默认值 0.0")
+                ratio = 0.0
+        
+        print(f"🔍 处理后的比例: {ratio} (类型: {type(ratio)})")
+        
         if ratio >= 0.5:
             return "adaptive_50"
         elif ratio >= 0.3:
@@ -601,8 +656,8 @@ class AdaptiveGroupingTester:
             if min_ratio <= unknown_ratio <= max_ratio:
                 return phase_name
         
-        # 如果都不匹配，返回二分法阶段
-        return 'binary_search'
+        # 如果都不匹配，返回默认阶段
+        return 'unknown_phase'
     
     def switch_to_next_phase(self):
         """切换到下一个测试阶段 - 基于未知关系比例"""
@@ -617,24 +672,28 @@ class AdaptiveGroupingTester:
                     unknown_ratio = (total_possible_relations - server_confirmed_count) / total_possible_relations
                     
                     # 🔧 重要：根据配置的策略阈值确定目标策略
-                    target_ratio = self._get_strategy_by_unknown_ratio(unknown_ratio)
-                    target_strategy = self.get_strategy_name_by_ratio(target_ratio)
+                    # _get_strategy_by_unknown_ratio返回元组(ratio, name)
+                    target_ratio_tuple = self._get_strategy_by_unknown_ratio(unknown_ratio)
                     
-                    # 如果是二分法策略，不需要切换阶段
-                    if target_strategy == "binary_search":
-                        print(f"🏁 切换到二分法策略")
-                        return False
+                    # 正确处理返回的元组
+                    if isinstance(target_ratio_tuple, tuple) and len(target_ratio_tuple) >= 1:
+                        target_ratio_value = target_ratio_tuple[0]
+                        target_strategy = target_ratio_tuple[1] if len(target_ratio_tuple) > 1 else self.get_strategy_name_by_ratio(target_ratio_value)
+                    else:
+                        target_ratio_value = target_ratio_tuple
+                        target_strategy = self.get_strategy_name_by_ratio(target_ratio_value)
                     
                     # 找到对应的阶段索引
                     target_phase_index = None
                     for i, ratio in enumerate(self.group_ratios):
-                        if abs(ratio - target_ratio) < 0.01:  # 允许小的浮点误差
+                        if abs(ratio - target_ratio_value) < 0.01:  # 允许小的浮点误差
                             target_phase_index = i
                             break
                     
                     if target_phase_index is None:
-                        print(f"⚠️ 无法找到匹配的阶段索引，保持当前阶段")
-                        return False
+                        print(f"⚠️ 无法找到匹配的阶段索引，使用策略配置的比例")
+                        # 即使没有找到匹配的阶段索引，也使用策略配置的比例
+                        self.current_phase = min(len(self.group_ratios) - 1, max(0, int((1 - target_ratio_value) * len(self.group_ratios))))
                     
                     # 切换到目标阶段
                     self.current_phase = target_phase_index
@@ -654,24 +713,28 @@ class AdaptiveGroupingTester:
         unknown_ratio = len(self.unknown_relations) / total_possible_relations
         
         # 🔧 重要：根据配置的策略阈值确定目标策略
-        target_ratio = self._get_strategy_by_unknown_ratio(unknown_ratio)
-        target_strategy = self.get_strategy_name_by_ratio(target_ratio)
+        # _get_strategy_by_unknown_ratio返回元组(ratio, name)
+        target_ratio_tuple = self._get_strategy_by_unknown_ratio(unknown_ratio)
         
-        # 如果是二分法策略，不需要切换阶段
-        if target_strategy == "binary_search":
-            print(f"🏁 切换到二分法策略")
-            return False
+        # 正确处理返回的元组
+        if isinstance(target_ratio_tuple, tuple) and len(target_ratio_tuple) >= 1:
+            target_ratio_value = target_ratio_tuple[0]
+            target_strategy = target_ratio_tuple[1] if len(target_ratio_tuple) > 1 else self.get_strategy_name_by_ratio(target_ratio_value)
+        else:
+            target_ratio_value = target_ratio_tuple
+            target_strategy = self.get_strategy_name_by_ratio(target_ratio_value)
         
         # 找到对应的阶段索引
         target_phase_index = None
         for i, ratio in enumerate(self.group_ratios):
-            if abs(ratio - target_ratio) < 0.01:  # 允许小的浮点误差
+            if abs(ratio - target_ratio_value) < 0.01:  # 允许小的浮点误差
                 target_phase_index = i
                 break
         
         if target_phase_index is None:
-            print(f"⚠️ 无法找到匹配的阶段索引，保持当前阶段")
-            return False
+            print(f"⚠️ 无法找到匹配的阶段索引，使用策略配置的比例")
+            # 即使没有找到匹配的阶段索引，也使用策略配置的比例
+            self.current_phase = min(len(self.group_ratios) - 1, max(0, int((1 - target_ratio_value) * len(self.group_ratios))))
         
         # 切换到目标阶段
         self.current_phase = target_phase_index
@@ -687,11 +750,43 @@ class AdaptiveGroupingTester:
     def get_current_group_ratio(self) -> float:
         """获取当前阶段的分组比例 - 基于未知关系比例动态计算"""
         strategy_ratio, _ = self._get_strategy_info()
+        
+        # 处理 strategy_ratio 可能是元组的情况
+        if isinstance(strategy_ratio, tuple):
+            print(f"🔍 调试 get_current_group_ratio: 检测到元组类型，提取第一个元素: {strategy_ratio}")
+            strategy_ratio = strategy_ratio[0] if strategy_ratio else 0.0
+        
+        # 确保是数值类型
+        if not isinstance(strategy_ratio, (int, float)):
+            print(f"🔍 调试 get_current_group_ratio: 非数值类型，尝试转换: {strategy_ratio}")
+            try:
+                strategy_ratio = float(strategy_ratio)
+            except (ValueError, TypeError):
+                print(f"❌ 无法转换为数值，使用默认值 0.0")
+                strategy_ratio = 0.0
+        
+        print(f"🔍 调试 get_current_group_ratio: 返回比例={strategy_ratio} (类型: {type(strategy_ratio)})")
         return strategy_ratio
     
     def get_current_strategy_name(self) -> str:
         """获取当前策略名称"""
         _, strategy_name = self._get_strategy_info()
+        
+        # 处理 strategy_name 可能是元组的情况
+        if isinstance(strategy_name, tuple):
+            print(f"🔍 调试 get_current_strategy_name: 检测到元组类型，提取第一个元素: {strategy_name}")
+            strategy_name = strategy_name[0] if strategy_name else "默认策略"
+        
+        # 确保是字符串类型
+        if not isinstance(strategy_name, str):
+            print(f"🔍 调试 get_current_strategy_name: 非字符串类型，尝试转换: {strategy_name}")
+            try:
+                strategy_name = str(strategy_name)
+            except (ValueError, TypeError):
+                print(f"❌ 无法转换为字符串，使用默认值")
+                strategy_name = "默认策略"
+        
+        print(f"🔍 调试 get_current_strategy_name: 返回策略名称={strategy_name} (类型: {type(strategy_name)})")
         return strategy_name
     
     def _get_strategy_info(self) -> tuple:
@@ -734,18 +829,37 @@ class AdaptiveGroupingTester:
     
     def _get_strategy_by_unknown_ratio(self, unknown_ratio: float) -> tuple:
         """根据未知关系比例和配置的策略阈值选择策略，返回(策略比例, 策略名称)"""
-        # 获取策略配置
-        if 'test_execution' in self.config and 'phase_switch_criteria' in self.config['test_execution']:
-            phase_thresholds = self.config['test_execution']['phase_switch_criteria']['phase_thresholds']
-            
-            # 按优先级检查各个阶段（从高到低）
-            for phase_name in ['phase_1', 'phase_2', 'phase_3']:
-                if phase_name in phase_thresholds:
-                    threshold = phase_thresholds[phase_name]
-                    min_ratio = threshold['min_unknown_ratio']
-                    max_ratio = threshold['max_unknown_ratio']
+        # 确保 unknown_ratio 是有效的数值
+        if not isinstance(unknown_ratio, (int, float)) or unknown_ratio < 0 or unknown_ratio > 1:
+            print(f"⚠️  无效的未知关系比例: {unknown_ratio}，使用默认值 1.0")
+            unknown_ratio = 1.0
+        
+        try:
+            # 获取策略配置
+            if 'test_execution' in self.config and 'phase_switch_criteria' in self.config['test_execution']:
+                phase_thresholds = self.config['test_execution']['phase_switch_criteria']['phase_thresholds']
+                
+                print(f"🔍 当前配置的策略阈值: {phase_thresholds}")
+                print(f"🔍 当前未知关系比例: {unknown_ratio:.1%}")
+                
+                # 检查所有阶段，包括二分法策略
+                # 首先提取二分法策略进行特殊处理
+                binary_threshold = None
+                regular_phases = []
+                
+                for phase_name, threshold in phase_thresholds.items():
+                    if phase_name == 'binary_search' or (threshold.get('strategy_type') == 'binary_search' or threshold.get('strategy_name') == '二分法策略'):
+                        binary_threshold = threshold
+                    else:
+                        regular_phases.append((phase_name, threshold))
+                
+                # 先检查普通阶段
+                for phase_name, threshold in regular_phases:
+                    # 使用 .get() 方法获取配置值，避免 KeyError
+                    min_ratio = threshold.get('min_unknown_ratio', 0.0)
+                    max_ratio = threshold.get('max_unknown_ratio', 1.0)
                     
-                    # 修复：确保 min_ratio 和 max_ratio 是数值类型
+                    # 确保 min_ratio 和 max_ratio 是数值类型
                     if isinstance(min_ratio, (list, tuple)):
                         min_ratio = min_ratio[0] if min_ratio else 0.0
                     elif not isinstance(min_ratio, (int, float)):
@@ -756,10 +870,55 @@ class AdaptiveGroupingTester:
                     elif not isinstance(max_ratio, (int, float)):
                         max_ratio = float(max_ratio) if max_ratio else 1.0
                     
-                    # 修复：使用正确的范围检查
+                    print(f"  检查策略 {phase_name}: {min_ratio:.1%} <= {unknown_ratio:.1%} <= {max_ratio:.1%}")
+                    
+                    # 使用正确的范围检查
                     if min_ratio <= unknown_ratio <= max_ratio:
-                        strategy_name = threshold.get('strategy_name', f'{phase_name}策略')
-                        group_ratio = threshold['group_ratio']
+                        # 返回策略标识符而不是显示名称，用于前端正确映射显示名称
+                        strategy_name = threshold.get('strategy_type', phase_name)
+                        # 使用 .get() 方法获取 group_ratio，避免 KeyError
+                        group_ratio = threshold.get('group_ratio', 0.1)
+                        
+                        # 确保 group_ratio 是浮点数
+                        if isinstance(group_ratio, (list, tuple)):
+                            group_ratio = group_ratio[0] if group_ratio else 0.1
+                        elif not isinstance(group_ratio, (int, float)):
+                            group_ratio = float(group_ratio) if group_ratio else 0.1
+                        
+                        print(f"  ✅ 匹配策略 {phase_name} ({strategy_name}): {min_ratio:.1%} <= {unknown_ratio:.1%} <= {max_ratio:.1%}")
+                        print(f"  分组比例: {group_ratio:.1%}")
+                        
+                        return group_ratio, strategy_name
+                    else:
+                        print(f"  ❌ 不匹配策略 {phase_name}: {min_ratio:.1%} <= {unknown_ratio:.1%} <= {max_ratio:.1%}")
+                
+                # 然后检查二分法策略（当没有匹配到普通阶段时）
+                if binary_threshold:
+                    # 使用 .get() 方法获取配置值，避免 KeyError
+                    min_ratio = binary_threshold.get('min_unknown_ratio', 0.0)
+                    max_ratio = binary_threshold.get('max_unknown_ratio', 1.0)
+                    
+                    # 确保 min_ratio 和 max_ratio 是数值类型
+                    if isinstance(min_ratio, (list, tuple)):
+                        min_ratio = min_ratio[0] if min_ratio else 0.0
+                    elif not isinstance(min_ratio, (int, float)):
+                        min_ratio = float(min_ratio) if min_ratio else 0.0
+                    
+                    if isinstance(max_ratio, (list, tuple)):
+                        max_ratio = max_ratio[0] if max_ratio else 1.0
+                    elif not isinstance(max_ratio, (int, float)):
+                        max_ratio = float(max_ratio) if max_ratio else 1.0
+                    
+                    print(f"  检查二分法策略: {min_ratio:.1%} <= {unknown_ratio:.1%} <= {max_ratio:.1%}")
+                    
+                    # 特殊处理：当未知关系比例低于某个阈值时直接使用二分法策略
+                    # 这是为了确保当普通阶段都不匹配时（即未知关系较少时）能正确切换到二分法
+                    binary_match = min_ratio <= unknown_ratio <= max_ratio or (unknown_ratio < max_ratio and max_ratio < 1.0)
+                    
+                    if binary_match:
+                        # 返回策略标识符而不是显示名称，用于前端正确映射显示名称
+                        strategy_name = binary_threshold.get('strategy_type', 'binary_search')
+                        group_ratio = binary_threshold.get('group_ratio', 0.0)
                         
                         # 确保 group_ratio 是浮点数
                         if isinstance(group_ratio, (list, tuple)):
@@ -767,62 +926,35 @@ class AdaptiveGroupingTester:
                         elif not isinstance(group_ratio, (int, float)):
                             group_ratio = float(group_ratio) if group_ratio else 0.0
                         
-                        print(f"  ✅ 匹配策略 {phase_name} ({strategy_name}): {min_ratio:.1%} <= {unknown_ratio:.1%} <= {max_ratio:.1%}")
+                        print(f"  ✅ 匹配二分法策略 ({strategy_name}): {min_ratio:.1%} <= {unknown_ratio:.1%} <= {max_ratio:.1%} 或未知关系比例低于阈值")
+                        print(f"  分组比例: {group_ratio:.1%}")
+                        
                         return group_ratio, strategy_name
-                    else:
-                        print(f"  ❌ 不匹配策略 {phase_name}: {min_ratio:.1%} <= {unknown_ratio:.1%} <= {max_ratio:.1%}")
-            
-            # 检查二分法策略
-            if 'binary_search' in phase_thresholds:
-                threshold = phase_thresholds['binary_search']
-                min_ratio = threshold['min_unknown_ratio']
-                max_ratio = threshold['max_unknown_ratio']
                 
-                # 修复：确保 min_ratio 和 max_ratio 是数值类型
-                if isinstance(min_ratio, (list, tuple)):
-                    min_ratio = min_ratio[0] if min_ratio else 0.0
-                elif not isinstance(min_ratio, (int, float)):
-                    min_ratio = float(min_ratio) if min_ratio else 0.0
-                
-                if isinstance(max_ratio, (list, tuple)):
-                    max_ratio = max_ratio[0] if max_ratio else 1.0
-                elif not isinstance(max_ratio, (int, float)):
-                    max_ratio = float(max_ratio) if max_ratio else 1.0
-                
-                if min_ratio <= unknown_ratio <= max_ratio:
-                    strategy_name = threshold.get('strategy_name', '二分法策略')
-                    group_ratio = threshold.get('group_ratio', 0.0)
-                    
-                    # 确保 group_ratio 是浮点数
-                    if isinstance(group_ratio, (list, tuple)):
-                        group_ratio = group_ratio[0] if group_ratio else 0.0
-                    elif not isinstance(group_ratio, (int, float)):
-                        group_ratio = float(group_ratio) if group_ratio else 0.0
-                    
-                    print(f"  ✅ 匹配二分法策略 ({strategy_name}): {min_ratio:.1%} <= {unknown_ratio:.1%} <= {max_ratio:.1%}")
-                    return group_ratio, strategy_name
-            
-            # 如果都不匹配，使用二分法
-            print(f"  ⚠️  没有匹配的策略，使用二分法")
-            return 0.0, "二分法策略"
-        else:
-            # 使用默认的硬编码阈值
-            if unknown_ratio >= 0.5:  # 50%以上
-                return 0.5, "50%集群策略"
-            elif unknown_ratio >= 0.3:  # 30%-50%
-                return 0.3, "30%集群策略"
-            elif unknown_ratio >= 0.1:  # 10%-30%
-                return 0.1, "10%集群策略"
-            else:  # 10%以下
-                return 0.0, "二分法策略"
+
+        except Exception as e:
+            print(f"⚠️  策略选择出错: {e}")
+            import traceback
+            traceback.print_exc()
+            # 返回默认策略标识符，避免无限循环
+            return 0.1, "unknown"
+        
+        # 未匹配到任何策略时，返回默认策略
+        print(f"  ⚠️  没有匹配的策略，返回默认策略")
+        return 0.1, "unknown"
     
     def create_point_clusters(self) -> List[List[int]]:
         """创建点位集群 - 按比例切割为不相交的集群，使用随机分组策略"""
+        print(f"\n" + "="*60)
         print(f"🔍 创建点位集群（随机分组策略）...")
+        print(f"="*60)
         
         # 获取当前阶段的分组比例 - 使用动态计算而不是固定数组
         current_ratio = self.get_current_group_ratio()
         cluster_size = int(self.total_points * current_ratio)
+        
+        print(f"🔍 调试 create_point_clusters: current_ratio={current_ratio}")
+        print(f"🔍 调试 create_point_clusters: cluster_size={cluster_size}")
         
         print(f"当前阶段: {self.current_phase + 1}")
         print(f"分组比例: {current_ratio:.1%}")
@@ -1165,13 +1297,22 @@ class AdaptiveGroupingTester:
     
     def run_phase_tests(self, max_tests: int = None) -> int:
         """运行当前阶段的测试 - 按集群进行"""
+        print(f"\n" + "="*80)
+        print(f"🚀🚀🚀 进入 run_phase_tests 方法 🚀🚀🚀")
+        print(f"="*80)
+
+        print(f"🔍🔍🔍 当前分组比例: {self.get_current_group_ratio()} 🔍🔍🔍")
+        
         if max_tests is None:
             max_tests = self.config['test_execution']['max_tests_per_phase']
         
-        # 🔧 重要：检查当前策略，如果是二分法则直接调用二分法测试
         current_ratio = self.get_current_group_ratio()
+        print(f"🔍 调试 run_phase_tests: current_ratio={current_ratio}, 类型={type(current_ratio)}")
+        print(f"🔍 调试 run_phase_tests: current_ratio == 0.0 结果={current_ratio == 0.0}")
+        
+        # 策略切换仅取决于策略配置
         if current_ratio == 0.0:  # 二分法策略
-            print(f"\n🔍 检测到二分法策略，切换到二分法测试")
+            print(f"\n🚀🚀🚀 检测到二分法策略，切换到二分法测试 🚀🚀🚀")
             return self.run_binary_search_testing(max_tests)
         
         # 获取当前策略名称
@@ -1238,35 +1379,23 @@ class AdaptiveGroupingTester:
         total_possible_relations = self.total_points * (self.total_points - 1)
         known_ratio = len(self.known_relations) / total_possible_relations
         
-        # 当已知关系超过85%时，切换到二分法
-        binary_search_threshold = 0.85
-        
-        # 或者当未知关系少于100个时，切换到二分法
-        min_unknown_relations = 100
-        
-        # 确保至少进行一定数量的测试后再考虑切换
-        min_tests_before_switch = 50
-        
+        # 策略切换仅取决于策略配置
         should_switch = False
         
-        if self.total_tests >= min_tests_before_switch:
-            should_switch = (known_ratio >= binary_search_threshold or 
-                            len(self.unknown_relations) <= min_unknown_relations)
+        # 获取当前策略配置
+        current_ratio = self.get_current_group_ratio()
+        if current_ratio == 0.0:  # 二分法策略
+            should_switch = True
         
-        if should_switch:
-            print(f"🔄 检测到二分法切换条件:")
-            print(f"  已知关系比例: {known_ratio:.1%}")
-            print(f"  剩余未知关系: {len(self.unknown_relations)} 个")
-            print(f"  阈值: {binary_search_threshold:.1%} 或 {min_unknown_relations} 个")
-            print(f"  已运行测试: {self.total_tests} 次")
-        else:
-            if self.total_tests < min_tests_before_switch:
-                print(f"⏳ 测试次数不足 ({self.total_tests}/{min_tests_before_switch})，继续自适应分组测试")
+        print(f"🔄 二分法切换状态: {'允许' if should_switch else '不允许'}")
+        print(f"  当前已知关系比例: {known_ratio:.1%}")
+        print(f"  剩余未知关系: {len(self.unknown_relations)} 个")
+        print(f"  已运行测试: {self.total_tests} 次")
         
         return should_switch
     
     def run_binary_search_testing(self, max_tests: int = None) -> int:
-        """运行二分法测试"""
+        """运行二分法测试 - 按照完整的二分法逻辑从特定点位出发进行测试"""
         if max_tests is None:
             max_tests = self.config['test_execution']['max_total_tests'] - self.total_tests
         
@@ -1280,28 +1409,40 @@ class AdaptiveGroupingTester:
         tests_run = 0
         binary_start_time = time.time()
         
-        # 获取所有未知关系的点位对
-        unknown_point_pairs = list(self.unknown_relations)
-        
         # 🔧 重要：记录测试前的关系数量，用于计算新探查的关系数量
         initial_known_relations = len(self.known_relations)
         
-        while tests_run < max_tests and unknown_point_pairs:
-            # 🔧 重要：智能选择点位对，优先选择概率较高的
-            point_pair = self.select_optimal_binary_pair(unknown_point_pairs)
-            if point_pair not in unknown_point_pairs:
+        # 遍历所有点位作为基准点位
+        for base_point in range(self.total_points):
+            if tests_run >= max_tests:
+                break
+                
+            print(f"\n🎯 选择基准点位 {base_point} 进行二分法测试")
+            
+            # 获取所有与基准点位有未知关系的点位
+            unknown_points_with_base = []
+            for point in range(self.total_points):
+                if point != base_point and ((base_point, point) in self.unknown_relations or 
+                                           (point, base_point) in self.unknown_relations):
+                    unknown_points_with_base.append(point)
+            
+            if not unknown_points_with_base:
+                print(f"✅ 点位 {base_point} 与所有其他点位的关系已确认，跳过")
                 continue
                 
-            unknown_point_pairs.remove(point_pair)
-            point1, point2 = point_pair
+            print(f"🔍 发现 {len(unknown_points_with_base)} 个点位与基准点位 {base_point} 存在未知关系")
             
-            print(f"\n🔬 二分法测试 #{self.total_tests + 1}")
-            print(f"测试点位对: {point1} <-> {point2}")
+            # 步骤1: 选定基准点位，将所有未知关系点位设为开启
+            current_unknown_points = unknown_points_with_base.copy()
             
             try:
-                # 测试点位1作为电源，点位2作为测试点
+                # 步骤2: 对基准点位通电，测试所有未知点位
+                print(f"\n🔬 二分法测试 #{self.total_tests + 1}")
+                print(f"基准点位: {base_point} (通电)")
+                print(f"测试点位: {current_unknown_points} (全部开启)")
+                
                 test_start_time = time.time()
-                test_result = self.run_single_test([point2], point1, "二分法策略")
+                test_result = self.run_single_test(current_unknown_points, base_point, "二分法策略")
                 
                 if test_result:
                     test_duration = time.time() - test_start_time
@@ -1328,113 +1469,150 @@ class AdaptiveGroupingTester:
                     self.total_tests += 1
                     tests_run += 1
                     
-                    # 🔧 重要：显示新探查的关系数量
-                    if new_relations > 0:
-                        print(f"🎯 新探查到 {new_relations} 个点位关系！")
-                    else:
-                        print(f"📊 本次测试未发现新的点位关系")
+                    # 获取检测到的连接
+                    detected_connections = test_result.get('detected_connections', [])
                     
-                    # 打印测试结果
                     print(f"✅ 测试完成")
-                    print(f"检测到连接: {len(test_result.get('detected_connections', []))}个")
+                    print(f"检测到连接: {len(detected_connections)}个")
                     print(f"继电器操作: {test_result.get('relay_operations', 0)}次")
-                    
-                    # 🔧 重要：安全地获取通电次数，避免KeyError
-                    power_on_count = 1  # 默认值
-                    if 'test_result' in test_result:
-                        power_on_count = test_result['test_result'].get('power_on_operations', 1)
-                    else:
-                        power_on_count = test_result.get('power_on_operations', 1)
-                    
-                    print(f"通电次数: {power_on_count}次")  # 使用设置的值
+                    print(f"通电次数: 1次")
                     print(f"测试耗时: {test_duration:.2f}秒")
                     
                     # 🔧 重要：显示新探查的关系数量
                     if new_relations > 0:
                         print(f"🎯 新探查到 {new_relations} 个点位关系！")
-                    else:
-                        print(f"📊 本次测试未发现新的点位关系")
-                    
-                    # 检查是否已经确认了这对点位的关系
-                    if (point1, point2) not in self.unknown_relations:
-                        print(f"✅ 点位 {point1} 和 {point2} 的关系已确认")
-                    else:
-                        print(f"⚠️  点位 {point1} 和 {point2} 的关系仍未确认")
-                        
-                        # 如果第一次测试没有确认关系，尝试反向测试
-                        if tests_run < max_tests:
-                            print(f"🔄 尝试反向测试: {point2} -> {point1}")
-                            
-                            reverse_test_start = time.time()
-                            reverse_result = self.run_single_test([point1], point2, "二分法策略")
-                            
-                            if reverse_result:
-                                reverse_duration = time.time() - reverse_test_start
-                                
-                                # 🔧 重要：强制设置正确的测试数据，确保不被API数据覆盖
-                                if 'test_result' in reverse_result:
-                                    reverse_result['test_result']['power_on_operations'] = 1
-                                else:
-                                    reverse_result['power_on_operations'] = 1
-                                
-                                reverse_result['test_duration'] = reverse_duration
-                                
-                                # 🔧 重要：记录反向测试前的关系数量
-                                before_reverse_relations = len(self.known_relations)
-                                
-                                # 更新关系矩阵
-                                self.update_relationship_matrix(reverse_result)
-                                
-                                # 计算反向测试新探查的关系数量
-                                after_reverse_relations = len(self.known_relations)
-                                new_reverse_relations = after_reverse_relations - before_reverse_relations
-                                
-                                # 更新统计
-                                self.total_tests += 1
-                                tests_run += 1
-                                
-                                print(f"✅ 反向测试完成")
-                                print(f"检测到连接: {len(reverse_result.get('detected_connections', []))}个")
-                                print(f"继电器操作: {reverse_result.get('relay_operations', 0)}次")
-                                
-                                # 🔧 重要：安全地获取通电次数，避免KeyError
-                                power_on_count = 1  # 默认值
-                                if 'test_result' in reverse_result:
-                                    power_on_count = reverse_result['test_result'].get('power_on_operations', 1)
-                                else:
-                                    power_on_count = reverse_result.get('power_on_operations', 1)
-                                
-                                print(f"通电次数: {power_on_count}次")  # 使用设置的值
-                                print(f"测试耗时: {reverse_duration:.2f}秒")
-                                
-                                # 🔧 重要：显示反向测试新探查的关系数量
-                                if new_reverse_relations > 0:
-                                    print(f"🎯 反向测试新探查到 {new_reverse_relations} 个点位关系！")
-                                else:
-                                    print(f"📊 反向测试未发现新的点位关系")
-                                
-                                # 再次检查关系是否确认
-                                if (point1, point2) not in self.unknown_relations:
-                                    print(f"✅ 点位 {point1} 和 {point2} 的关系已确认")
-                                else:
-                                    print(f"❌ 点位 {point1} 和 {point2} 的关系仍未确认，可能存在问题")
                     
                     # 显示当前状态
                     self.print_current_status()
                     
-                else:
-                    print(f"❌ 测试失败，跳过")
-                    time.sleep(0.1)
+                    # 更新未知点位列表 - 移除已经确认关系的点位
+                    updated_unknown_points = []
+                    for point in current_unknown_points:
+                        if ((base_point, point) in self.unknown_relations or 
+                            (point, base_point) in self.unknown_relations):
+                            updated_unknown_points.append(point)
                     
+                    current_unknown_points = updated_unknown_points
+                    
+                    # 步骤3: 如果没有检测到连接，将所有点位设置为不导通
+                    if len(detected_connections) == 0:
+                        print(f"📊 未检测到与基准点位 {base_point} 的导通关系")
+                        print(f"🔄 将基准点位 {base_point} 与所有未知点位标记为不导通")
+                        
+                        # 手动标记所有剩余未知点位为不导通
+                        for point in current_unknown_points:
+                            if (base_point, point) in self.unknown_relations:
+                                self.unknown_relations.remove((base_point, point))
+                                self.known_relations.add((base_point, point))
+                                # 更新关系矩阵为不导通
+                                self.relationship_matrix[base_point][point] = 0
+                                self.relationship_matrix[point][base_point] = 0
+                        
+                        current_unknown_points = []
+                    else:
+                        # 步骤4: 如果检测到连接，执行二分查找
+                        print(f"🔍 检测到与基准点位 {base_point} 的导通关系，开始二分查找")
+                        
+                        # 执行二分查找过程
+                        while tests_run < max_tests and current_unknown_points:
+                            # 将未知点位分成两半
+                            mid = len(current_unknown_points) // 2
+                            first_half = current_unknown_points[:mid]
+                            
+                            if not first_half:
+                                break
+                                
+                            print(f"\n🔬 二分法测试 #{self.total_tests + 1}")
+                            print(f"基准点位: {base_point} (通电)")
+                            print(f"测试点位: {first_half} (二分测试)")
+                            
+                            try:
+                                # 测试第一半点位
+                                test_start_time = time.time()
+                                half_test_result = self.run_single_test(first_half, base_point, "二分法策略")
+                                
+                                if half_test_result:
+                                    test_duration = time.time() - test_start_time
+                                    
+                                    # 🔧 重要：强制设置正确的测试数据
+                                    if 'test_result' in half_test_result:
+                                        half_test_result['test_result']['power_on_operations'] = 1
+                                    else:
+                                        half_test_result['power_on_operations'] = 1
+                                    
+                                    half_test_result['test_duration'] = test_duration
+                                    
+                                    # 更新关系矩阵
+                                    self.update_relationship_matrix(half_test_result)
+                                    
+                                    # 更新统计
+                                    self.total_tests += 1
+                                    tests_run += 1
+                                    
+                                    # 获取检测到的连接
+                                    half_detected_connections = half_test_result.get('detected_connections', [])
+                                    
+                                    print(f"✅ 二分测试完成")
+                                    print(f"检测到连接: {len(half_detected_connections)}个")
+                                    print(f"通电次数: 1次")
+                                    print(f"测试耗时: {test_duration:.2f}秒")
+                                    
+                                    # 更新未知点位列表
+                                    updated_half_unknown = []
+                                    for point in first_half:
+                                        if ((base_point, point) in self.unknown_relations or 
+                                            (point, base_point) in self.unknown_relations):
+                                            updated_half_unknown.append(point)
+                                    
+                                    # 如果在第一半检测到连接，则继续在第一半中查找
+                                    if len(half_detected_connections) > 0:
+                                        print(f"🔍 在第一半点位中检测到连接，继续在第一半中查找")
+                                        current_unknown_points = updated_half_unknown
+                                    else:
+                                        # 如果在第一半未检测到连接，则在第二半中查找
+                                        print(f"📊 在第一半点位中未检测到连接，切换到第二半查找")
+                                        # 先将第一半中剩余的未知点位标记为不导通
+                                        for point in updated_half_unknown:
+                                            if (base_point, point) in self.unknown_relations:
+                                                self.unknown_relations.remove((base_point, point))
+                                                self.known_relations.add((base_point, point))
+                                                # 更新关系矩阵为不导通
+                                                self.relationship_matrix[base_point][point] = 0
+                                                self.relationship_matrix[point][base_point] = 0
+                                        # 然后切换到第二半
+                                        second_half = current_unknown_points[mid:]
+                                        # 过滤第二半中已经确认关系的点位
+                                        updated_second_half = []
+                                        for point in second_half:
+                                            if ((base_point, point) in self.unknown_relations or 
+                                                (point, base_point) in self.unknown_relations):
+                                                updated_second_half.append(point)
+                                        current_unknown_points = updated_second_half
+                                    
+                                    # 显示当前状态
+                                    self.print_current_status()
+                                    
+                                    # 短暂休息
+                                    time.sleep(0.1)
+                                    
+                                else:
+                                    print(f"❌ 二分测试失败，跳过")
+                                    time.sleep(0.1)
+                                    break
+                                    
+                            except Exception as e:
+                                print(f"❌ 二分测试过程中发生错误: {e}")
+                                import traceback
+                                traceback.print_exc()
+                                time.sleep(0.1)
+                                break
+                
             except Exception as e:
                 print(f"❌ 二分法测试过程中发生错误: {e}")
                 import traceback
                 traceback.print_exc()
                 time.sleep(0.1)
                 continue
-            
-            # 短暂休息
-            time.sleep(0.1)
         
         # 二分法测试完成统计
         binary_duration = time.time() - binary_start_time
@@ -1653,7 +1831,12 @@ class AdaptiveGroupingTester:
                 break
             
             # 运行当前阶段测试
+            print(f"\n" + "="*100)
+            print(f"🚀🚀🚀 准备调用 run_phase_tests 方法 🚀🚀🚀")
+            print(f"="*100)
             phase_tests = self.run_phase_tests()
+            print(f"🚀🚀🚀 run_phase_tests 方法返回: {phase_tests} 🚀🚀🚀")
+            print(f"="*100)
             
             if phase_tests == 0:
                 print(f"⚠️  阶段 {current_phase} 没有运行测试，尝试切换阶段")

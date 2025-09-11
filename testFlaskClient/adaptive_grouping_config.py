@@ -51,12 +51,12 @@ TEST_EXECUTION_CONFIG = {
     'max_tests_per_phase': 500,  # 每阶段最大测试次数（考虑到组内全点位测试）
     'phase_switch_criteria': {
         # 基于未知关系比例的阶段切换策略
-        'phase_thresholds': {
-            'phase_1': {'min_unknown_ratio': 0.9, 'max_unknown_ratio': 1.0, 'group_ratio': 0.30, 'strategy_name': '30%集群策略'},  # 30%集群策略：100%>未知关系>90%
-            'phase_2': {'min_unknown_ratio': 0.5, 'max_unknown_ratio': 0.9, 'group_ratio': 0.20, 'strategy_name': '20%集群策略'},  # 20%集群策略：90%>未知关系>50%
-            'phase_3': {'min_unknown_ratio': 0.1, 'max_unknown_ratio': 0.5, 'group_ratio': 0.10, 'strategy_name': '10%集群策略'},  # 10%集群策略：50%>未知关系>10%
-            'binary_search': {'min_unknown_ratio': 0.0, 'max_unknown_ratio': 0.1, 'group_ratio': 0.0, 'strategy_name': '二分法策略'},  # 二分法策略：10%>未知关系
-        },
+            'phase_thresholds': {
+                'phase_1': {'min_unknown_ratio': 0.9, 'max_unknown_ratio': 1.0, 'group_ratio': 0.30, 'strategy_name': '30%集群策略'},  # 30%集群策略：100%>未知关系>90%
+                'phase_2': {'min_unknown_ratio': 0.5, 'max_unknown_ratio': 0.9, 'group_ratio': 0.20, 'strategy_name': '20%集群策略'},  # 20%集群策略：90%>未知关系>50%
+                'phase_10_percent': {'min_unknown_ratio': 0.1, 'max_unknown_ratio': 0.5, 'group_ratio': 0.10, 'strategy_name': '10%集群策略'},  # 10%集群策略：50%>未知关系>10%
+                'binary_search': {'min_unknown_ratio': 0.0, 'max_unknown_ratio': 0.1, 'group_ratio': 0.0, 'strategy_name': '二分法策略'},  # 二分法策略：10%>未知关系
+            },
         'min_tests_per_phase': 50,  # 每阶段最少测试次数
     },
     
@@ -101,31 +101,31 @@ ADAPTIVE_GROUPING_STRATEGY = {
     'relation_analysis': RELATION_ANALYSIS_CONFIG,
     
     # 策略描述
-    'strategy_summary': """
-    自适应分组测试策略：
-    
-    1. 基于未知关系比例的阶段切换策略：
-       - 第一阶段（30%集群）：100% > 未知关系 > 50%
-       - 第二阶段（20%集群）：50% > 未知关系 > 20%
-       - 第三阶段（10%集群）：20% > 未知关系 > 10%
-       - 第四阶段（二分法）：10% > 未知关系
-    
-    2. 集群内部关系未知性优化：
-       - 优先选择关系未知的点位组合
-       - 每组最多10%的点位关系已知
-       - 动态调整分组以保持未知关系比例
-       - 确保集群内部关系尽可能未知
-    
-    3. 智能分组选择：
-       - 最大化未知关系数量
-       - 平衡电源点位分布
-       - 避免冗余测试
-    
-    4. 动态策略调整：
-       - 实时监控关系矩阵状态
-       - 基于未知关系比例自动切换测试阶段
-       - 优化测试效率
-    """
+        'strategy_summary': """
+        自适应分组测试策略：
+        
+        1. 基于未知关系比例的阶段切换策略：
+           - 第一阶段（30%集群）：100% > 未知关系 > 50%
+           - 第二阶段（20%集群）：50% > 未知关系 > 20%
+           - 第三阶段（10%集群）：20% > 未知关系 > 10%
+           - 第四阶段（二分法）：10% > 未知关系
+        
+        2. 集群内部关系未知性优化：
+           - 优先选择关系未知的点位组合
+           - 每组最多10%的点位关系已知
+           - 动态调整分组以保持未知关系比例
+           - 确保集群内部关系尽可能未知
+        
+        3. 智能分组选择：
+           - 最大化未知关系数量
+           - 平衡电源点位分布
+           - 避免冗余测试
+        
+        4. 动态策略调整：
+           - 实时监控关系矩阵状态
+           - 基于未知关系比例自动切换测试阶段
+           - 优化测试效率
+        """
 }
 
 # 预设配置

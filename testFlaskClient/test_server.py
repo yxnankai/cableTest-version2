@@ -84,8 +84,10 @@ TEST_FRONTEND_HTML = """
         }
         .form-row {
             display: flex;
-            gap: 15px;
+            gap: 20px; /* 增加水平间距 */
             align-items: end;
+            flex-wrap: wrap; /* 允许按钮换行 */
+            margin-bottom: 10px;
         }
         .form-row .form-group {
             flex: 1;
@@ -98,7 +100,8 @@ TEST_FRONTEND_HTML = """
             border-radius: 4px;
             cursor: pointer;
             font-size: 14px;
-            margin-right: 10px;
+            margin-right: 15px;
+            margin-bottom: 10px; /* 添加垂直间距 */
         }
         .btn:hover {
             background: #5a6fd8;
@@ -1340,6 +1343,23 @@ def stop_test():
         # 这里可以实现停止测试的逻辑
         # 由于测试在后台线程中运行，可以通过设置标志位来停止
         return jsonify({'success': True, 'message': '测试已停止'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/test/force_binary', methods=['POST'])
+def force_binary_search():
+    """策略切换接口"""
+    global tester
+    try:
+        if tester is None:
+            return jsonify({'success': False, 'error': '系统未初始化'})
+        
+        # 策略切换现在仅通过配置管理，不再支持强制切换
+        return jsonify({
+            'success': False, 
+            'message': '强制切换功能已移除，请通过策略配置进行管理',
+            'hint': '请在策略配置界面设置二分法策略的起始比例'
+        })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
